@@ -2,19 +2,46 @@ import urllib.request
 import gzip
 import json
 import sqlite3
+import os
+import argparse
 from tqdm import tqdm
 from multiprocessing import Pool
 
-def createPaperTable():
-    cur.execute('''CREATE TABLE papers (id text, title text, abstract text, doi text)''')
+def createPaperTable(cur):
+    cur.execute('''CREATE TABLE IF NOT EXISTS papers (id TEXT PRIMARY KEY, title TEXT, abstract TEXT, doi TEXT)''')
 
 def insertPaper(cursor, paper):
     sql = "INSERT INTO papers (id,title,abstract,doi) VALUES (?, ?, ?, ?)"
     cursor.execute(sql, (paper['id'], paper['title'], paper['paperAbstract'], paper['doi']))
     
-def downloadFile(file, cur):
+
+def tryOpenCachedFile(file, fileCacheDir):
+    if fileCacheDir is None:
+        return None
+    try:
+        with open(os.path.join(fileCacheDir, file), "rb") as cachedFile:
+            unzippedBytes = gzip.decompress(cachedFile.read())
+            print("loaded {} from cache".format(file))
+            return unzippedBytes
+    except:
+        print("{} is not cached".format(file))
+        return None
+
+def requestFileHttp(file, fileCacheDir):
     response = urllib.request.urlopen(base_url + file)
-    unzippedBytes = gzip.decompress(response.read())
+    responseBytes = response.read()
+    if fileCacheDir:
+        with open(os.path.join(fileCacheDir, file), "wb") as cachedFile:
+            cachedFile.write(responseBytes)
+            print("cached {}".format(file))
+    unzippedBytes = gzip.decompress(responseBytes)
+    return unzippedBytes
+
+def downloadFile(file, cur, fileCacheDir):
+    unzippedBytes = tryOpenCachedFile(file, fileCacheDir)
+    if unzippedBytes is None:
+        unzippedBytes = requestFileHttp(file, fileCacheDir)
+
     decodedFile = unzippedBytes.decode('utf-8')
     jsons = decodedFile.split("\n")
     with tqdm(total=len(jsons)) as pbar:
@@ -23,25 +50,37 @@ def downloadFile(file, cur):
             if jsonPaper and jsonPaper.strip():
                 try:
                     paper = json.loads(jsonPaper)
-                    insertPaper(cur, paper)
+                    #insertPaper(cur, paper)
                 except:
                     print("failed: {}".format(jsonPaper))
             pbar.update(1)
             
-dbName = "ontovec.db"
+
+parser = argparse.ArgumentParser(description="download semantic scholar data")
+parser.add_argument("--sqlitePath", type=str, required=True, help="path to sqlite db file")
+parser.add_argument("--cacheDir", type=str, required=False, help="Folder to save semantic scholar files in")
+
+args = parser.parse_args()
+
+dbName = args.sqlitePath
+fileCacheDir = args.cacheDir
 base_url = "https://s3-us-west-2.amazonaws.com/ai2-s2-research-public/open-corpus/2020-03-01/"
+
 response = urllib.request.urlopen(base_url + "manifest.txt")
 manifest = response.read().decode('utf-8')
 files = manifest.split("\n")
 files = files[:-2] # last two files are sample and readme
 
+
 conn = sqlite3.connect(dbName)
 cur = conn.cursor()
-    
-createPaperTable()
+createPaperTable(cur)
+conn.commit()
+conn.close()  
 
 for file in files:
-    downloadFile(file, cur)
-    
-conn.commit()
-conn.close()
+    conn = sqlite3.connect(dbName)
+    cur = conn.cursor()
+    downloadFile(file, cur, fileCacheDir)
+    conn.commit()
+    conn.close()  
