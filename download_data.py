@@ -5,15 +5,20 @@ import sqlite3
 import os
 import argparse
 from tqdm import tqdm
-from multiprocessing import Pool
 
-def createPaperTable(cur):
+def createPaperTables(cur):
     cur.execute('''CREATE TABLE IF NOT EXISTS papers (id TEXT PRIMARY KEY, title TEXT, abstract TEXT, doi TEXT)''')
+    cur.execute('''CREATE TABLE IF NOT EXISTS paper_field (paperId TEXT, fieldOfStudy TEXT)''')
+    
+def insertField(cursor, paperId, field):
+    sql = "INSERT INTO paper_field (paperId, fieldOfStudy) VALUES (?, ?)"
+    cursor.execute(sql, (paperId, field))
 
 def insertPaper(cursor, paper):
     sql = "INSERT INTO papers (id,title,abstract,doi) VALUES (?, ?, ?, ?)"
     cursor.execute(sql, (paper['id'], paper['title'], paper['paperAbstract'], paper['doi']))
-    
+    for field in paper['fieldsOfStudy']:
+        insertField(cursor, paper['id'], field)
 
 def tryOpenCachedFile(file, fileCacheDir):
     if fileCacheDir is None:
@@ -50,7 +55,7 @@ def downloadFile(file, cur, fileCacheDir):
             if jsonPaper and jsonPaper.strip():
                 try:
                     paper = json.loads(jsonPaper)
-                    #insertPaper(cur, paper)
+                    insertPaper(cur, paper)
                 except:
                     print("failed: {}".format(jsonPaper))
             pbar.update(1)
@@ -74,7 +79,7 @@ files = files[:-2] # last two files are sample and readme
 
 conn = sqlite3.connect(dbName)
 cur = conn.cursor()
-createPaperTable(cur)
+createPaperTables(cur)
 conn.commit()
 conn.close()  
 
