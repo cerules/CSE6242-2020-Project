@@ -7,7 +7,7 @@ import argparse
 from tqdm import tqdm
 
 def createPaperTables(cur):
-    cur.execute('''CREATE TABLE IF NOT EXISTS papers (id TEXT PRIMARY KEY, title TEXT, abstract TEXT, doi TEXT)''')
+    cur.execute('''CREATE TABLE IF NOT EXISTS papers (id TEXT PRIMARY KEY, title TEXT, abstract TEXT, doi TEXT, year INTEGER)''')
     cur.execute('''CREATE TABLE IF NOT EXISTS paper_field (paperId TEXT, fieldOfStudy TEXT)''')
     
 def insertField(cursor, paperId, field):
@@ -15,8 +15,8 @@ def insertField(cursor, paperId, field):
     cursor.execute(sql, (paperId, field))
 
 def insertPaper(cursor, paper):
-    sql = "INSERT INTO papers (id,title,abstract,doi) VALUES (?, ?, ?, ?)"
-    cursor.execute(sql, (paper['id'], paper['title'], paper['paperAbstract'], paper['doi']))
+    sql = "INSERT INTO papers (id,title,abstract,doi,year) VALUES (?, ?, ?, ?, ?)"
+    cursor.execute(sql, (paper['id'], paper['title'], paper['paperAbstract'], paper['doi'], paper['year']))
     for field in paper['fieldsOfStudy']:
         insertField(cursor, paper['id'], field)
 
@@ -55,7 +55,8 @@ def downloadFile(file, cur, fileCacheDir):
             if jsonPaper and jsonPaper.strip():
                 try:
                     paper = json.loads(jsonPaper)
-                    insertPaper(cur, paper)
+                    if "Computer Science" in paper['fieldsOfStudy']:
+                        insertPaper(cur, paper)
                 except:
                     print("failed: {}".format(jsonPaper))
             pbar.update(1)
