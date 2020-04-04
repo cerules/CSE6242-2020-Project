@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script type="text/javascript" src="../lib/d3.v5.min.js"></script>
+<script type="text/javascript" src="../lib/d3-scale-chromatic.v1.min.js"></script>
+<style>
+    body {
+        background-color: white;
+    }
+
+    path.link {
+        fill: none;
+        stroke: #666;
+        stroke-width: 1.5px;
+    }
+
+    circle {
+        stroke: #fff;
+        stroke: black;
+        stroke-width: 1.5px;
+    }
+
+    text {
+        fill: #000;
+        font: 10px sans-serif;
+        pointer-events: none;
+    }
+</style>
+
+<body>
+    <script>
+
+        // get the data
+        var nodes = {};
+        var links = [];
+        d3.csv("ontology.csv").then(function (data) {
+
+            // format the data
+            data.forEach(function (d) {
+                var tempdata = { source: d["source"], target: d["target"] };
+
+                links.push(tempdata);
+                //d.year = +d.year
+                links.forEach(function (link) {
+                    link.source = nodes[link.source] ||
+                        (nodes[link.source] = { name: link.source });
+                    link.target = nodes[link.target] ||
+                        (nodes[link.target] = { name: link.target });
+                });
+            });
+        });
+
+        var width = 1200,
+            height = 700;
+
+        var force = d3.forceSimulation()
+            .nodes(d3.values(nodes))
+            .force("link", d3.forceLink(links).distance(100))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force("x", d3.forceX())
+            .force("y", d3.forceY())
+            .force("charge", d3.forceManyBody().strength(-250))
+            .alphaTarget(1)
+            .on("tick", tick)
+
+        var v = d3.scaleLinear()
+            .range([0, 100]);
+
+        v.domain([0, d3.max(links, function (d) { return d.value; })]);
+
+        var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .call(d3.zoom().on("zoom", function () {
+                svg.attr("transform", d3.event.transform)
+            }));
+
+        svg.append("svg:defs").selectAll("marker")
+            .data(["end"])
+            .enter().append("svg:marker")
+            .attr("id", String)
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 15)
+            .attr("refY", -1.5)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("svg:path")
+            .attr("d", "M0,-5L10,0L0,5");
+
+        // add the links and the arrows
+        var path = svg.append("g")
+            .selectAll("path")
+            .data(links)
+            .enter()
+            .append("path")
+            .attr("class", function (d) { return "link " + d.type; })
+            .style("stroke", "black");
+
+        // define the nodes
+        var node = svg.selectAll(".node")
+            .data(force.nodes())
+            .enter().append("g")
+            .attr("class", "node")
+            .on("dblclick", dblclick)
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        function myNodeWeight(d) {
+            d.weight = links.filter(function (l) {
+                return l.source.index == d.index || l.target.index == d.index
+            }).length;
+
+            return 5 + d.weight;
+        }
+
+        var myColor = d3.scaleSequential()
+            .domain([1, 9])
+            .interpolator(d3.interpolateWarm);
+
+
+        function dblclick(d) {
+            if (d.fixed == true) {
+                d3.select(this).select("circle")
+                    .style("fill", function (d) { return myColor(myNodeWeight(d)) });
+                d.fixed = false
+            } else {
+                d3.select(this).select("circle")
+                    .style("fill", "red");
+                d.fixed = true;
+            }
+        };
+
+        // add the nodes
+        node.append("circle")
+            .attr("r", function (d) {
+                return myNodeWeight(d)
+            })
+            .attr("fill", function (d) {
+                return myColor(myNodeWeight(d));
+            });
+
+
+
+        node.append("text")
+            .attr("x", 13)
+            .attr("y", 2)
+            .text(function (d) { return d.name; })
+            .style("font-weight", "800");
+
+        svg.append("text")
+            .attr("x", width - 250)
+            .attr("y", 50)
+            .text("psn6")
+            .style("font-size", "14px");
+
+        // add the curvy lines
+        function tick() {
+            path.attr("d", function (d) {
+                var dx = d.target.x - d.source.x,
+                    dy = d.target.y - d.source.y,
+                    dr = Math.sqrt(dx * dx + dy * dy);
+                return "M" +
+                    d.source.x + "," +
+                    d.source.y + "A" +
+                    dr + "," + dr + " 0 0,1 " +
+                    d.target.x + "," +
+                    d.target.y;
+            });
+
+            node
+                .attr("transform", function (d) {
+                    return "translate(" + d.x + "," + d.y + ")";
+                })
+        };
+
+        function dragstarted(d) {
+            if (!d3.event.active) force.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        };
+
+        function dragged(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        };
+
+        function dragended(d) {
+            if (!d3.event.active) force.alphaTarget(0);
+            if (d.fixed == true) {
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            else {
+                d.fx = null;
+                d.fy = null;
+            }
+        };
+    </script>
+</body>
+
+</html>
