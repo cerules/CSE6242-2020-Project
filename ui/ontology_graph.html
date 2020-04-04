@@ -52,6 +52,20 @@
         var width = 1200,
             height = 700;
 
+        var toggle = 0;
+
+        // Make object of all neighboring nodes.
+        var linkedByIndex = {};
+        links.forEach(function (d) {
+            linkedByIndex[d.source + ',' + d.target] = 1;
+            linkedByIndex[d.target + ',' + d.source] = 1;
+        });
+
+        // A function to test if two nodes are neighboring.
+        function neighboring(a, b) {
+            return linkedByIndex[a.index + ',' + b.index];
+        }
+
         var force = d3.forceSimulation()
             .nodes(d3.values(nodes))
             .force("link", d3.forceLink(links).distance(100))
@@ -102,6 +116,25 @@
             .enter().append("g")
             .attr("class", "node")
             .on("dblclick", dblclick)
+            .on('click', function (d, i) {
+                if (toggle == 0) {
+                    // Ternary operator restyles links and nodes if they are adjacent.
+                    d3.selectAll('path').style('stroke-opacity', function (l) {
+                        return l.target == d || l.source == d ? 1 : 0.1;
+                    });
+                    d3.selectAll('.node').style('opacity', function (n) {
+                        return neighboring(d, n) ? 1 : 0.1;
+                    });
+                    d3.select(this).style('opacity', 1);
+                    toggle = 1;
+                }
+                else {
+                    // Restore nodes and links to normal opacity.
+                    d3.selectAll('path').style('stroke-opacity', '0.6');
+                    d3.selectAll('.node').style('opacity', '1');
+                    toggle = 0;
+                }
+            })
             .call(d3.drag()
                 .on("start", dragstarted)
                 .on("drag", dragged)
@@ -197,6 +230,28 @@
                 d.fy = null;
             }
         };
+        var search = d3.select("body").append('form').attr('onsubmit', 'return false;');
+
+        var box = search.append('input')
+            .attr('type', 'text')
+            .attr('id', 'searchTerm')
+            .attr('placeholder', 'Type to search...');
+
+        var button = search.append('input')
+            .attr('type', 'button')
+            .attr('value', 'Search')
+            .on('click', function () { searchNodes(); });
+        function searchNodes() {
+            var term = document.getElementById('searchTerm').value;
+            var selected = svg.selectAll('.node').filter(function (d, i) {
+                return d.name.toLowerCase().search(term.toLowerCase()) == -1;
+            });
+            var path = svg.selectAll('path');
+            selected.style('opacity', '0');
+            path.style('stroke-opacity', '0');
+            d3.selectAll('.node').transition().duration(5000).style('opacity', '1');
+            d3.selectAll('path').transition().duration(5000).style('stroke-opacity', '0.6');
+        }
     </script>
 </body>
 
