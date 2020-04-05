@@ -6,11 +6,11 @@ from tqdm import tqdm
 def get_words(max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
     
     # Connect to abstract database
-    conn = sqlite3.connect('ontovec.db')
+    conn = sqlite3.connect('ontovec2.db')
     c = conn.cursor()
     
     # pull abstracts from database
-    c.execute("SELECT * FROM papers;")
+    c.execute("SELECT * FROM papers WHERE year >= 2010;")
     papers = c.fetchall()
     
     c.close()
@@ -46,4 +46,3 @@ def get_words(max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
     return keywords
 
 get_words()
-
