@@ -6,7 +6,7 @@ from tqdm import tqdm
 def get_words(max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
     
     # Connect to abstract database
-    conn = sqlite3.connect('ontovec2.db')
+    conn = sqlite3.connect('ontovec.db')
     c = conn.cursor()
     
     # pull abstracts from database
