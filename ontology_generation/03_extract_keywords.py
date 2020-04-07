@@ -46,4 +46,3 @@ def get_words(max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
     return keywords
 
 get_words()
-
