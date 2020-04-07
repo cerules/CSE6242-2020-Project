@@ -1,7 +1,13 @@
+# data folder
+ontology_generation/data/
+
 # SQLite Database
 *.db
 *.db-journal
 
+#ignore sentence output file
+sentences.txt
+sentences/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

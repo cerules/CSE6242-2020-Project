@@ -10,7 +10,7 @@ def get_words(max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
     c = conn.cursor()
     
     # pull abstracts from database
-    c.execute("SELECT * FROM papers;")
+    c.execute("SELECT * FROM papers WHERE papers.year >= 2020;")
     papers = c.fetchall()
     
     c.close()
@@ -25,12 +25,12 @@ def get_words(max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
         for paper in papers:
             words = kw_extractor.extract_keywords(paper[1])
             for word in words:
-                if word[0] < max_score:
-                    keywords.append((paper[0],word[1],word[0]))    
+                if word[1] < max_score:
+                    keywords.append((paper[0],word[0],word[1]))    
             pbar.update(1)
     
     # Connect to keywords database
-    conn = sqlite3.connect('keywords.db')
+    conn = sqlite3.connect('data/keywords.db')
     c = conn.cursor()
     
     # Make table of keywords
