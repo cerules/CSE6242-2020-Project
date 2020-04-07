@@ -1,0 +1,12 @@
+name: ontovec
+channels:
+  - defaults
+dependencies:
+  - numpy
+  - nltk
+  - tqdm
+  - jupyterlab
+  - python=3.8
+  - plac
+prefix: <todo:specify a prefix>
+
