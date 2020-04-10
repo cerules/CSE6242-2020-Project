@@ -196,8 +196,8 @@
         var links = [];
         var nodes = {};
         Promise.all([
-            d3.csv("words2.csv"),
-            d3.csv("edges2.csv")
+            d3.csv("../data/words2.csv"),
+            d3.csv("../data/edges2.csv")
         ]).then(function (files) {
             let data = files[0];
             data.forEach(function (d) {
