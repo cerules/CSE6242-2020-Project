@@ -63,7 +63,7 @@ def downloadFile(file, cur, fileCacheDir):
             
 
 parser = argparse.ArgumentParser(description="download semantic scholar data")
-parser.add_argument("--sqlitePath", type=str, required=True, help="path to sqlite db file")
+parser.add_argument("--sqlitePath", type=str, default="./data/ontovec.db" required=False, help="path to sqlite db file")
 parser.add_argument("--cacheDir", type=str, required=False, help="Folder to save semantic scholar files in")
 
 args = parser.parse_args()

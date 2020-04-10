@@ -5,8 +5,10 @@ import argparse
 import os
 
 parser = argparse.ArgumentParser(description="create initial ontology graph")
-parser.add_argument("--keywordDB", type=str, required=True, help="path to sqlite keywords db file")
-parser.add_argument("--s2vModel", type=str, required=True, help="path to trained sense2vec model")
+parser.add_argument("--keywordDB", type=str, default="./data/keywords.db", required=False, help="path to sqlite keywords db file")
+parser.add_argument("--s2vModel", type=str, default="./data/sense2vec_train/05", required=False, help="path to trained sense2vec model")
+parser.add_argument("--ouputDir", type=str, default="./data/ontologyGraph/", required=False, help="output directory")
+parser.add_argument("--threshold", type=float, default=0.6, required=False, help="cosine similarity threshold used to create edges between keywords")
 args = parser.parse_args()
 
 # load s2v model
@@ -21,7 +23,7 @@ c.execute("SELECT DISTINCT words from keywords")
 keywords = c.fetchall()
 keywords = list(map(lambda  w : str(w)[2:-3].replace(" ", "_").lower(), keywords))
 
-# finde kewyords with word vectors
+# find kewyords with word vectors
 vectoredKeywords = []
 for keyword in keywords:
     bestSense = s2v.get_best_sense(keyword)
@@ -34,20 +36,26 @@ relatedWords = []
 for idx, vectoredKeyword in enumerate(vectoredKeywords):
     similars = s2v.most_similar(vectoredKeyword)
     for similar in similars:
-        if similar[0] in vectoredKeywords and similar[1] > 0.8:
+        if similar[0] in vectoredKeywords and similar[1] > args.threshold:
             # print(f"{vectoredKeyword} is related to {similar[0]} with similarity {similar[1]}")
             relatedWords.append({'source': idx, 'target': vectoredKeywords.index(similar[0]), 'similarity': similar[1]})
 
-os.makedirs(os.path.dirname("ontologyGraph/"), exist_ok=True)
+os.makedirs(os.path.dirname(args.outputDir), exist_ok=True)
 # save edges file
-with open("ontologyGraph/edges.csv", "w") as csvfile:
+with open(os.path.join(args.outputDir, "edges.csv"), "w") as csvfile:
     edgeWriter = csv.writer(csvfile)
+    edgeWriter.writerow(["source", "target", "similarity"])
     for relatedWord in relatedWords:
         edgeWriter.writerow([relatedWord["source"], relatedWord["target"], relatedWord["similarity"]])
 
 # save words file
-with open("ontologyGraph/words.csv", "w") as csvfile:
+with open(os.path.join(args.outputDir, "words.csv"), "w") as csvfile:
     edgeWriter = csv.writer(csvfile)
+    header = ["nodeId", "word"]
+    for dimension in range(len(s2v[vectoredKeywords[0]])):
+        header.append("v"+str(dimension))
+
+    edgeWriter.writerow(header)
     for idx, vectoredKeyword in enumerate(vectoredKeywords):
         row = [idx, vectoredKeyword]
         row.extend(list(s2v[vectoredKeyword]))

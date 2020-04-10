@@ -3,10 +3,10 @@ import yake
 import sqlite3
 from tqdm import tqdm
 
-def get_words(max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
+def get_words(abstract_db, keyword_db, max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
     
     # Connect to abstract database
-    conn = sqlite3.connect('ontovec.db')
+    conn = sqlite3.connect(abstract_db)
     c = conn.cursor()
     
     # pull abstracts from database
@@ -30,7 +30,7 @@ def get_words(max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
             pbar.update(1)
     
     # Connect to keywords database
-    conn = sqlite3.connect('data/keywords.db')
+    conn = sqlite3.connect(keyword_db)
     c = conn.cursor()
     
     # Make table of keywords
@@ -45,4 +45,10 @@ def get_words(max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
     print("complete")
     return keywords
 
-get_words()
+parser = argparse.ArgumentParser(description="Extract keywords from paper abstracts")
+parser.add_argument("--abstractSqlitePath", type=str, default="./data/ontovec.db", required=False, help="path to paper abstract sqlite db file")
+parser.add_argument("--keywordSqlitePath", type=str, default="./data/keywords.db", required=False, help="path to output keyword sqlite db file"")
+
+args = parser.parse_args()
+
+get_words(args.abstractSqlitePath, args.keywordSqlitePath)
