@@ -30,10 +30,12 @@
     }
 
     div#halfpage {
-        width: 1215px;
-        height: 715px;
+        width: 1807px;
+        height: 757px;
         border: 2px solid #000;
         overflow-y: auto;
+        margin-top: 15px;
+        margin-left: 25px;
     }
 
 
@@ -114,17 +116,18 @@
         background-color: DodgerBlue !important;
         color: #ffffff;
     }
+    h1 {
+        text-align: center;
+    }
 
 </style>
-<script src="https://d3js.org/d3.v4.min.js"></script>
-<div align="center" style="width:100%;">
-<h1>Ontology Graph </h1>
-</div>
+<script src="lib/d3.v4.min.js"></script>
+<h1 >OntoVec</h1>
 <script>
 
     var radius = 15;
-    var width = 1200;
-    var height = 700;
+    var width = 1800;
+    var height = 750;
     var active = d3.select(null);
 
     var thershold = 0.6;
@@ -694,10 +697,10 @@
             var footer = d3.select("body").append("div")
                 .attr("id", "footer")
                 .attr("align", "left")
-                .style('width', "1200px");
+                .style('width', "1800px");
 
             footer.append("text")
-                .style('width', '1200px')
+                .style('width', '1800px')
                 .style('text-align', 'right')
                 .text('CSE 6242(Spring2020) -- Team 189 -- (Prashanthi Narayanamangalam, Christopher Roth, Jonathan Storey)');
 
