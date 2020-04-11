@@ -289,9 +289,9 @@
             .data(links)
             .enter().append("line")
             .attr("stroke-width", function (d) {
-                return ((d.similarity - thershold)*10);
+                return ((d.similarity - thershold)*10)+ 1;
             })
-            .style("stroke", linkColour);
+            .style("stroke", "black");
 
         // function dblclick(d) {
         //     if (d.fixed == true) {
@@ -380,17 +380,7 @@
             }
         }
 
-        //Function to choose the line colour and thickness 
-        //If the link type is "A" return green 
-        //If the link type is "E" return red 
-        function linkColour(d) {
-            if (d.type == "A") {
-                return "green";
-            } else {
-                return "red";
-            }
-        }
-
+    
         //Drag functions 
         //d is the node 
         function drag_start(d) {
