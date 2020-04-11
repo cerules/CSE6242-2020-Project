@@ -115,12 +115,9 @@
         color: #ffffff;
     }
 
-    h1 {
-        text-align : center;
-    }
 </style>
 <script src="https://d3js.org/d3.v4.min.js"></script>
-<div align="center" style="width:1200px;">
+<div align="center" style="width:100%;">
 <h1>Ontology Graph </h1>
 </div>
 <script>
@@ -394,6 +391,9 @@
         //d is the node 
         function drag_start(d) {
             if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            simulation.restart();
+            iterations = 100;
+            highlightNode(d);
             d.fx = d.x;
             d.fy = d.y;
         }
@@ -406,6 +406,8 @@
 
         function drag_end(d) {
             if (!d3.event.active) simulation.alphaTarget(0);
+            simulation.restart();
+            iterations = 100;
             d.fx = null;
             d.fy = null;
         }
@@ -417,7 +419,7 @@
         }
 
         function tickActions() {
-            if (iterations === 0) {
+            if (iterations %100 === 0 && !document.getElementById("loadingdiv")) {
                 var loadingDiv = d3.select("body")
                     .append("div")
                     .attr("id", "loadingdiv");
@@ -697,7 +699,7 @@
             footer.append("text")
                 .style('width', '1200px')
                 .style('text-align', 'right')
-                .text('CSE 6242 -- 2020 -- PROJECT  (Prashanthi Narayanamangalam, Christopher Roth, Jonathan Storey)');
+                .text('CSE 6242(Spring2020) -- Team 189 -- (Prashanthi Narayanamangalam, Christopher Roth, Jonathan Storey)');
 
         });
     });
