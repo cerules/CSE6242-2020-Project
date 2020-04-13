@@ -63,8 +63,9 @@ def downloadFile(file, cur, fileCacheDir):
             
 
 parser = argparse.ArgumentParser(description="download semantic scholar data")
-parser.add_argument("--sqlitePath", type=str, required=True, help="path to sqlite db file")
+parser.add_argument("--sqlitePath", type=str, default="../data/ontovec.db", required=False, help="path to sqlite db file")
 parser.add_argument("--cacheDir", type=str, required=False, help="Folder to save semantic scholar files in")
+parser.add_argument("--fileLimit", type=int, required=False, default="-1", help="limit on number of files to download from semantic scholar")
 
 args = parser.parse_args()
 
@@ -77,6 +78,8 @@ manifest = response.read().decode('utf-8')
 files = manifest.split("\n")
 files = files[:-2] # last two files are sample and readme
 
+if args.fileLimit > 0:
+    files = files[0:args.fileLimit]
 
 conn = sqlite3.connect(dbName)
 cur = conn.cursor()
