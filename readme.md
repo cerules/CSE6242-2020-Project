@@ -2,14 +2,22 @@
 
 ## Step 0: Install dependencies
 
-`conda env create -f ontovec.yml`
+Install python dependencies from conda environment file and pip
 
-`pip install sense2vec`
-`pip install git+https://github.com/LIAAD/yake`
+```sh
+conda env create -f ontovec.yml
+pip install sense2vec
+pip install git+https://github.com/LIAAD/yake
+```
 
-`clone https://github.com/stanfordnlp/GloVe`
+Clone and build the GloVe source code by running make in the GloVe directory
 
-run make in the GloVe directory
+```sh
+git clone https://github.com/stanfordnlp/GloVe
+cd ./GloVe
+make
+```
+
 
 ## Step 1: Download Data
 
@@ -17,7 +25,9 @@ Downloads academic paper metadata from [Semantic Scholar](https://www.semanticsc
 
 Can be run with default arguments. For more information run the script with --help.
 
-```python ./01_download_data.py```
+```sh
+python ./01_download_data.py
+```
 
 
 ## Step 2: Extract Sentences
@@ -26,7 +36,9 @@ Extracts sentences from paper abstracts
 
 Can be run with default arguments. For more information run the script with --help.
 
-```python ./02_extract_sentences.py```
+```sh
+python ./02_extract_sentences.py
+```
 
 ## step 3: Extract Keywords
 
@@ -34,7 +46,9 @@ Uses [YAKE!](https://github.com/LIAAD/yake) to extract keywords from paper abstr
 
 Can be run with default arguments. For more information run the script with --help.
 
-```python ./03_extract_keywords.py```
+```sh
+python ./03_extract_keywords.py
+```
 
 ## step 4: Train sense2vec glove model
 
@@ -44,7 +58,9 @@ Should clone [forked version of sense2vec](https://github.com/cerules/sense2vec)
 
 input arguments depend on previous step's output locations. Glove build directory as well as sense2vec scripts directory are required as input. If using the default set arguments your arguments should look something like this:
 
-```./04_sense2vec_train.sh ../../GloVe/build/ ../../sense2vec/scripts/ ./data/sense2vec_train/```
+```sh
+./04_sense2vec_train.sh ../../GloVe/build/ ../../sense2vec/scripts/ ./data/sense2vec_train/
+```
 
 ## step 5: Connect keywords based on word vector distance
 
@@ -54,10 +70,42 @@ outputs an edges.csv and words.csv file.
 
 Can be run with default arguments. For more information run the script with --help.
 
-```python ./05_initial_ontology.py```
+```sh
+python ./05_initial_ontology.py
+```
+
+This step outputs the `words.csv` and `edges.csv` files needed for the visualization step.
+
+The files should look something like the examples below.
+
+`words.csv`
+
+|id|word|v0|v1|v2|v3|...|v127|
+|--|----|--|--|--|--|---|----|
+|0|computer_science|0.23|0.123|-0.32|0.832|...|0.044123|
+|1|machine_learning|0.98|0.123|0.45|-0.32|...|0.132|
+|...|
+
+`edges.csv`
+
+|source|target|similarity|
+|------|------|----------|
+|0|1|0.6|
+|...|
+
 
 ## step 6: visualize/modify
 
 Visualize the words and edges in a graph.
-
 Edges can be added and removed as seen fit.
+
+The vizualization step requires a `words.csv` and `edges.csv` file in the `data/` directory. These should be present if you followed the previous steps with default arguments.
+
+The easiest way to run the visualization is with a local python webserver from the ui folder.
+
+For example
+```sh
+python -m http.server 8000
+```
+
+Finally, navigate to `localhost:8000/ontology_graph.html` in your browser.
