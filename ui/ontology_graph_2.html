@@ -520,7 +520,7 @@
             toggle = 0;
         }
     }
-    d3.csv("../data/words.csv", function (data) {
+    d3.csv("../data/ontologyGraph/words.csv", function (data) {
         data.forEach(function (d) {
             if (d.word) {
                 var temp = d.word.split("|");
@@ -528,7 +528,7 @@
                 textToIdMap[temp[0].toLowerCase()] = d.id;
             }
         });
-        d3.csv("../data/edges.csv", function (data) {
+        d3.csv("../data/ontologyGraph/edges.csv", function (data) {
             data.forEach(function (d) {
                 var skipFlag = 1;
                 for (i = 0; i < links.length; i++) {

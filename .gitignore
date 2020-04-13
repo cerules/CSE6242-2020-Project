@@ -1,5 +1,5 @@
 # data folder
-ontology_generation/data/
+data/
 
 # SQLite Database
 *.db

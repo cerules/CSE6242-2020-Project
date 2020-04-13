@@ -6,8 +6,8 @@ nltk.download('punkt')
 
 
 parser = argparse.ArgumentParser(description="Extract abstract sentences into text file")
-parser.add_argument("--sqlitePath", type=str, default="./data/ontovec.db", required=False, help="path to sqlite db file")
-parser.add_argument("--sentencesDir", type=str, default="./data/sentences/", required=False, help="Folder to save semantic scholar files in")
+parser.add_argument("--sqlitePath", type=str, default="../data/ontovec.db", required=False, help="path to sqlite db file")
+parser.add_argument("--sentencesDir", type=str, default="../data/sentences/", required=False, help="Folder to save semantic scholar files in")
 parser.add_argument("--limit", type=int, default=1000, required=False, help="max number of abstracts to include")
 
 args = parser.parse_args()

@@ -1,7 +1,7 @@
 echo glove build directory: $1
 echo sense2vec scripts directory: $2
 echo training output directory: $3
-for file in ./data/sentences/*; do
+for file in ../data/sentences/*; do
     python $201_parse.py $file $301
 done
 

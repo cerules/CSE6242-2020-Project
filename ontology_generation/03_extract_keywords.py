@@ -4,14 +4,14 @@ import sqlite3
 import argparse
 from tqdm import tqdm
 
-def get_words(abstract_db, keyword_db, max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
+def get_words(abstract_db, keyword_db, year=2020, max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
     
     # Connect to abstract database
     conn = sqlite3.connect(abstract_db)
     c = conn.cursor()
     
     # pull abstracts from database
-    c.execute("SELECT * FROM papers WHERE papers.year >= 2010;")
+    c.execute(f"SELECT * FROM papers WHERE papers.year >= {year};")
     papers = c.fetchall()
     
     c.close()
@@ -47,9 +47,10 @@ def get_words(abstract_db, keyword_db, max_phrases_per_paper=10, max_words_in_ph
     return keywords
 
 parser = argparse.ArgumentParser(description="Extract keywords from paper abstracts")
-parser.add_argument("--abstractSqlitePath", type=str, default="./data/ontovec.db", required=False, help="path to paper abstract sqlite db file")
-parser.add_argument("--keywordSqlitePath", type=str, default="./data/keywords.db", required=False, help="path to output keyword sqlite db file")
+parser.add_argument("--abstractSqlitePath", type=str, default="../data/ontovec.db", required=False, help="path to paper abstract sqlite db file")
+parser.add_argument("--keywordSqlitePath", type=str, default="../data/keywords.db", required=False, help="path to output keyword sqlite db file")
+parser.add_argument("--yearCutOff", type=str, default="2020", required=False, help="year to filter paper abstracts. Only extracts keywords from papers with year >= yearCutOff")
 
 args = parser.parse_args()
 
-get_words(args.abstractSqlitePath, args.keywordSqlitePath)
+get_words(args.abstractSqlitePath, args.keywordSqlitePath, args.yearCutOff)

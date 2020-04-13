@@ -5,9 +5,9 @@ import argparse
 import os
 
 parser = argparse.ArgumentParser(description="create initial ontology graph")
-parser.add_argument("--keywordDB", type=str, default="./data/keywords.db", required=False, help="path to sqlite keywords db file")
-parser.add_argument("--s2vModel", type=str, default="./data/sense2vec_train/05", required=False, help="path to trained sense2vec model")
-parser.add_argument("--outputDir", type=str, default="./data/ontologyGraph/", required=False, help="output directory")
+parser.add_argument("--keywordDB", type=str, default="../data/keywords.db", required=False, help="path to sqlite keywords db file")
+parser.add_argument("--s2vModel", type=str, default="../data/sense2vec_train/05", required=False, help="path to trained sense2vec model")
+parser.add_argument("--outputDir", type=str, default="../data/ontologyGraph/", required=False, help="output directory")
 parser.add_argument("--threshold", type=float, default=0.6, required=False, help="cosine similarity threshold used to create edges between keywords")
 args = parser.parse_args()
 
