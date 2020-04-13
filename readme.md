@@ -42,9 +42,9 @@ Trains a sense2vec glove model on the paper abstracts using the sentences extrac
 
 Should clone [forked version of sense2vec](https://github.com/cerules/sense2vec) that fixes formatting issue until the issue is fixed / this [pull request](https://github.com/explosion/sense2vec/pull/98) is completed
 
-input arguments depend on previous step's output locations. Glove build directory is also required as input. If using the default set arguments your arguments should look like this:
+input arguments depend on previous step's output locations. Glove build directory as well as sense2vec scripts directory are required as input. If using the default set arguments your arguments should look something like this:
 
-```./04_sense2vec_train.sh TODO```
+```./04_sense2vec_train.sh ../../GloVe/build/ ../../sense2vec/scripts/ ./data/sense2vec_train/```
 
 ## step 5: Connect keywords based on word vector distance
 

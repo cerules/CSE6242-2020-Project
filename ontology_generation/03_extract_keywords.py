@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import yake
 import sqlite3
+import argparse
 from tqdm import tqdm
 
 def get_words(abstract_db, keyword_db, max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
@@ -10,7 +11,7 @@ def get_words(abstract_db, keyword_db, max_phrases_per_paper=10, max_words_in_ph
     c = conn.cursor()
     
     # pull abstracts from database
-    c.execute("SELECT * FROM papers WHERE papers.year >= 2020;")
+    c.execute("SELECT * FROM papers WHERE papers.year >= 2010;")
     papers = c.fetchall()
     
     c.close()
@@ -47,7 +48,7 @@ def get_words(abstract_db, keyword_db, max_phrases_per_paper=10, max_words_in_ph
 
 parser = argparse.ArgumentParser(description="Extract keywords from paper abstracts")
 parser.add_argument("--abstractSqlitePath", type=str, default="./data/ontovec.db", required=False, help="path to paper abstract sqlite db file")
-parser.add_argument("--keywordSqlitePath", type=str, default="./data/keywords.db", required=False, help="path to output keyword sqlite db file"")
+parser.add_argument("--keywordSqlitePath", type=str, default="./data/keywords.db", required=False, help="path to output keyword sqlite db file")
 
 args = parser.parse_args()
 
