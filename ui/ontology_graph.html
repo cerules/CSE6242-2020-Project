@@ -1,19 +1,43 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<script type="text/javascript" src="lib/d3.v5.min.js"></script>
-<script type="text/javascript" src="lib/d3-scale-chromatic.v1.min.js"></script>
 <style>
+    #loadingdiv {
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        position: fixed;
+        display: block;
+        opacity: 0.7;
+        background-color: #fff;
+        z-index: 99;
+        text-align: center;
+    }
+
+    .links line {
+        stroke: #999;
+        stroke-opacity: 0.6;
+    }
+
+    .nodes circle {
+        stroke: black;
+        stroke-width: 0px;
+    }
+
     body {
         background-color: white;
         font: 16px Arial;
     }
 
     div#halfpage {
-        height: 699px;
-        width: 1199px;
+        width: 1807px;
+        height: 757px;
         border: 2px solid #000;
         overflow-y: auto;
+        margin-top: 15px;
+        margin-left: 30px;
     }
+
 
     path.link {
         fill: none;
@@ -31,6 +55,8 @@
         fill: #000;
         font: 10px sans-serif;
         pointer-events: none;
+        display: inline-block;
+        width: 200px;
     }
 
 
@@ -90,424 +116,690 @@
         background-color: DodgerBlue !important;
         color: #ffffff;
     }
+
+    h1 {
+        text-align: center;
+    }
 </style>
+<script src="lib/d3.v4.min.js"></script>
+<h1>OntoVec</h1>
+<p>Placeholder for instruction. Explain about graph<br>explain about node inseration and deletion. edge insertion and deletion</p>
+<script>
 
-<body>
-    <script>
+    var radius = 15;
+    var width = 1800;
+    var height = 750;
+    var active = d3.select(null);
 
-        function autocomplete(inp, arr) {
-            /*the autocomplete function takes two arguments,
-            the text field element and an array of possible autocompleted values:*/
-            var currentFocus;
-            /*execute a function when someone writes in the text field:*/
-            inp.addEventListener("input", function (e) {
-                var a, b, i, val = this.value;
-                /*close any already open lists of autocompleted values*/
-                closeAllLists();
-                if (!val) { return false; }
-                currentFocus = -1;
-                /*create a DIV element that will contain the items (values):*/
-                a = document.createElement("DIV");
-                a.setAttribute("id", this.id + "autocomplete-list");
-                a.setAttribute("class", "autocomplete-items");
-                /*append the DIV element as a child of the autocomplete container:*/
-                this.parentNode.appendChild(a);
-                /*for each item in the array...*/
-                for (i = 0; i < arr.length; i++) {
-                    /*check if the item starts with the same letters as the text field value:*/
-                    if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
-                        /*create a DIV element for each matching element:*/
-                        b = document.createElement("DIV");
-                        /*make the matching letters bold:*/
-                        b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
-                        b.innerHTML += arr[i].substr(val.length);
-                        /*insert a input field that will hold the current array item's value:*/
-                        b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
-                        /*execute a function when someone clicks on the item value (DIV element):*/
-                        b.addEventListener("click", function (e) {
-                            /*insert the value for the autocomplete text field:*/
-                            inp.value = this.getElementsByTagName("input")[0].value;
-                            /*close the list of autocompleted values,
-                            (or any other open lists of autocompleted values:*/
-                            closeAllLists();
-                        });
-                        a.appendChild(b);
-                    }
-                }
-            });
-            /*execute a function presses a key on the keyboard:*/
-            inp.addEventListener("keydown", function (e) {
-                var x = document.getElementById(this.id + "autocomplete-list");
-                if (x) x = x.getElementsByTagName("div");
-                if (e.keyCode == 40) {
-                    /*If the arrow DOWN key is pressed,
-                    increase the currentFocus variable:*/
-                    currentFocus++;
-                    /*and and make the current item more visible:*/
-                    addActive(x);
-                } else if (e.keyCode == 38) { //up
-                    /*If the arrow UP key is pressed,
-                    decrease the currentFocus variable:*/
-                    currentFocus--;
-                    /*and and make the current item more visible:*/
-                    addActive(x);
-                } else if (e.keyCode == 13) {
-                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
-                    e.preventDefault();
-                    if (currentFocus > -1) {
-                        /*and simulate a click on the "active" item:*/
-                        if (x) x[currentFocus].click();
-                    }
-                }
-            });
-            function addActive(x) {
-                /*a function to classify an item as "active":*/
-                if (!x) return false;
-                /*start by removing the "active" class on all items:*/
-                removeActive(x);
-                if (currentFocus >= x.length) currentFocus = 0;
-                if (currentFocus < 0) currentFocus = (x.length - 1);
-                /*add class "autocomplete-active":*/
-                x[currentFocus].classList.add("autocomplete-active");
-            }
-            function removeActive(x) {
-                /*a function to remove the "active" class from all autocomplete items:*/
-                for (var i = 0; i < x.length; i++) {
-                    x[i].classList.remove("autocomplete-active");
+    var thershold = 0.6;
+    var maxId = 0;
+
+    var idNodeMap = {};
+    var textToIdMap = {};
+    var nodes = {};
+    var linkedByIndex = {};
+    var links = [];
+    var nodes_data = [];
+    var container;
+    var node, circle, link, labels;
+    var k = 1, toggle = 0;
+    var g;
+    var zoom_handler, svg;
+    function reset(callback) {
+        toggle = 0;
+        active.classed("active", false);
+        active = d3.select(null);
+        let transition = svg.transition().duration(50).call(zoom_handler.transform, d3.zoomIdentity);
+        if (callback) {
+            transition.on("end", callback);
+        }
+    }
+    function autocomplete(inp, arr) {
+        /*the autocomplete function takes two arguments,
+        the text field element and an array of possible autocompleted values:*/
+        var currentFocus;
+        /*execute a function when someone writes in the text field:*/
+        inp.addEventListener("input", function (e) {
+            var a, b, i, val = this.value;
+            /*close any already open lists of autocompleted values*/
+            closeAllLists();
+            if (!val) { return false; }
+            currentFocus = -1;
+            /*create a DIV element that will contain the items (values):*/
+            a = document.createElement("DIV");
+            a.setAttribute("id", this.id + "autocomplete-list");
+            a.setAttribute("class", "autocomplete-items");
+            /*append the DIV element as a child of the autocomplete container:*/
+            this.parentNode.appendChild(a);
+            /*for each item in the array...*/
+            for (i = 0; i < arr.length; i++) {
+                /*check if the item starts with the same letters as the text field value:*/
+                if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+                    /*create a DIV element for each matching element:*/
+                    b = document.createElement("DIV");
+                    /*make the matching letters bold:*/
+                    b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+                    b.innerHTML += arr[i].substr(val.length);
+                    /*insert a input field that will hold the current array item's value:*/
+                    b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+                    /*execute a function when someone clicks on the item value (DIV element):*/
+                    b.addEventListener("click", function (e) {
+                        /*insert the value for the autocomplete text field:*/
+                        inp.value = this.getElementsByTagName("input")[0].value;
+                        /*close the list of autocompleted values,
+                        (or any other open lists of autocompleted values:*/
+                        closeAllLists();
+                    });
+                    a.appendChild(b);
                 }
             }
-            function closeAllLists(elmnt) {
-                /*close all autocomplete lists in the document,
-                except the one passed as an argument:*/
-                var x = document.getElementsByClassName("autocomplete-items");
-                for (var i = 0; i < x.length; i++) {
-                    if (elmnt != x[i] && elmnt != inp) {
-                        x[i].parentNode.removeChild(x[i]);
-                    }
+        });
+        /*execute a function presses a key on the keyboard:*/
+        inp.addEventListener("keydown", function (e) {
+            var x = document.getElementById(this.id + "autocomplete-list");
+            if (x) x = x.getElementsByTagName("div");
+            if (e.keyCode == 40) {
+                /*If the arrow DOWN key is pressed,
+                increase the currentFocus variable:*/
+                currentFocus++;
+                /*and and make the current item more visible:*/
+                addActive(x);
+            } else if (e.keyCode == 38) { //up
+                /*If the arrow UP key is pressed,
+                decrease the currentFocus variable:*/
+                currentFocus--;
+                /*and and make the current item more visible:*/
+                addActive(x);
+            } else if (e.keyCode == 13) {
+                /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                e.preventDefault();
+                if (currentFocus > -1) {
+                    /*and simulate a click on the "active" item:*/
+                    if (x) x[currentFocus].click();
                 }
             }
-            /*execute a function when someone clicks in the document:*/
-            document.addEventListener("click", function (e) {
-                closeAllLists(e.target);
-            });
-        }        
-
-        var idNodeMap = {};
-        var links = [];
-        var nodes = {};
-        Promise.all([
-            d3.csv("../data/words2.csv"),
-            d3.csv("../data/edges2.csv")
-        ]).then(function (files) {
-            let data = files[0];
-            data.forEach(function (d) {
-                if (d.word) {
-                    var temp = d.word.split("|");
-                    idNodeMap[d.id] = temp[0];
+        });
+        function addActive(x) {
+            /*a function to classify an item as "active":*/
+            if (!x) return false;
+            /*start by removing the "active" class on all items:*/
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (x.length - 1);
+            /*add class "autocomplete-active":*/
+            x[currentFocus].classList.add("autocomplete-active");
+        }
+        function removeActive(x) {
+            /*a function to remove the "active" class from all autocomplete items:*/
+            for (var i = 0; i < x.length; i++) {
+                x[i].classList.remove("autocomplete-active");
+            }
+        }
+        function closeAllLists(elmnt) {
+            /*close all autocomplete lists in the document,
+            except the one passed as an argument:*/
+            var x = document.getElementsByClassName("autocomplete-items");
+            for (var i = 0; i < x.length; i++) {
+                if (elmnt != x[i] && elmnt != inp) {
+                    x[i].parentNode.removeChild(x[i]);
                 }
+            }
+        }
+        /*execute a function when someone clicks in the document:*/
+        document.addEventListener("click", function (e) {
+            closeAllLists(e.target);
+        });
+    }
+
+    function drawChart() {
+        d3.select("svg").remove();
+        svg = container.append("svg")
+            .attr("width", width + "px")
+            .attr("height", height + "px")
+            .on("click", stopped, true);
+
+        svg.append("rect")
+            .attr("width", "100%")
+            .attr("height", "100%")
+            .attr("fill", "#ccc");
+
+        //set up the simulation and add forces  
+        var iterations = 0;
+        var simulation = d3.forceSimulation()
+            .nodes(nodes_data);
+
+        var link_force = d3.forceLink(links)
+            .id(function (d) { return d.name; })
+            .distance(150);
+
+        var charge_force = d3.forceManyBody()
+            // .distanceMin(125)
+            .distanceMax(600)
+            .strength(-100);
+
+        var center_force = d3.forceCenter(width / 2, height / 2);
+
+        simulation
+            .force("charge_force", charge_force)
+            .force("center_force", center_force)
+            .force("links", link_force)
+            ;
+
+
+        //add tick instructions: 
+        simulation.on("tick", tickActions);
+
+        //add encompassing group for the zoom 
+        g = svg.append("g")
+            .attr("class", "everything");
+
+        //draw lines for the links 
+        link = g.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(links)
+            .enter().append("line")
+            .attr("stroke-width", function (d) {
+                return ((d.similarity - thershold) * 10) + 1;
+            })
+            .style("stroke", "red");
+
+        // function dblclick(d) {
+        //     if (d.fixed == true) {
+        //         d3.select(this).select("circle")
+        //             .style("fill", function (d) { return myColor(myNodeWeight(d)) });
+        //         d.fixed = false
+        //     } else {
+        //         d3.select(this).select("circle")
+        //             .style("fill", "red");
+        //         d.fixed = true;
+        //     }
+        // };
+        function myNodeWeight(d) {
+            d.weight = links.filter(function (l) {
+                return l.source.index == d.index || l.target.index == d.index
+            }).length;
+
+            return 5 + d.weight;
+        }
+
+        var myColor = d3.scaleSequential()
+            .domain([1, 9])
+            .interpolator(d3.interpolateWarm);
+        //draw circles for the nodes 
+        node = g.selectAll(".node")
+            .data(nodes_data)
+            .enter()
+            .append("g")
+            .attr("class", "node")
+            .attr("id", function (d) { return d.name.toLowerCase(); })
+            //.on("dblclick", dblclick)
+            .on('click', highlightNode);
+
+        // add the nodes
+        circle = node.append("circle")
+            .attr("r", function (d) {
+                return myNodeWeight(d)
+            })
+            .attr("fill", function (d) {
+                return myColor(myNodeWeight(d));
             });
 
-            data = files[1];
+
+
+        labels = node.append("text")
+            .attr("x", 13)
+            .attr("y", 2)
+            .text(function (d) { return d.name; })
+            .style("font-weight", "800");
+        // .enter()
+        // .append("circle")
+        // .attr("r", function (d) {
+        //     return myNodeWeight(d)
+        // })
+        // .attr("fill", function (d) {
+        //     return myColor(myNodeWeight(d));
+        // });
+
+
+        //add drag capabilities  
+        var drag_handler = d3.drag()
+            .on("start", drag_start)
+            .on("drag", drag_drag)
+            .on("end", drag_end);
+
+        drag_handler(node);
+
+
+        //add zoom capabilities 
+        zoom_handler = d3.zoom()
+            // .scaleExtent([0.05, 8])
+            // .translateExtent([[0, 0], [width, height]])
+            .on("zoom", zoom_actions);
+
+        zoom_handler(svg);
+
+        /** Functions **/
+
+        //Function to choose what color circle we have
+        //Let's return blue for males and red for females
+        function circleColour(d) {
+            if (d.sex == "M") {
+                return "blue";
+            } else {
+                return "pink";
+            }
+        }
+
+
+        //Drag functions 
+        //d is the node 
+        function drag_start(d) {
+            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            simulation.restart();
+            iterations = 100;
+            highlightNode(d);
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        //make sure you can't drag the circle outside the box
+        function drag_drag(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        }
+
+        function drag_end(d) {
+            if (!d3.event.active) simulation.alphaTarget(0);
+            simulation.restart();
+            iterations = 100;
+            d.fx = null;
+            d.fy = null;
+        }
+
+        //Zoom functions 
+        function zoom_actions() {
+            k = d3.event.transform.k;
+            g.attr("transform", d3.event.transform);
+        }
+
+        function tickActions() {
+            if (iterations % 100 === 0 && !document.getElementById("loadingdiv")) {
+                var loadingDiv = d3.select("body")
+                    .append("div")
+                    .attr("id", "loadingdiv");
+
+                loadingDiv.append("text").text("Loading....");
+            }
+            iterations++;
+            //update circle positions each tick of the simulation 
+            circle
+                .attr("cx", function (d) { return d.x; })
+                .attr("cy", function (d) { return d.y; });
+
+            labels
+                .attr("x", function (d) { return d.x + 13; })
+                .attr("y", function (d) { return d.y + 2; })
+
+            //update link positions 
+            link
+                .attr("x1", function (d) { return d.source.x; })
+                .attr("y1", function (d) { return d.source.y; })
+                .attr("x2", function (d) { return d.target.x; })
+                .attr("y2", function (d) { return d.target.y; });
+
+            if (iterations > 150) {
+                simulation.stop();
+                document.getElementById("loadingdiv").remove();
+            }
+        }
+
+    }
+
+    function stopped() {
+        if (d3.event.defaultPrevented) d3.event.stopPropagation();
+    }
+
+    function flashNode(sel) {
+        sel.transition().duration(500).style('opacity', '1');
+    }
+
+    function zoomToNodeByName(name) {
+        var zoomCallBack = function () {
+            var selected = document.getElementById(name.toLowerCase());
+            if (selected === undefined) {
+                return;
+            }
+
+            var transform = {
+                x: width / 2 - k * selected.getBoundingClientRect().x,
+                y: height / 2 - k * selected.getBoundingClientRect().y
+            };
+
+            g.transition().duration(100)
+                .call(zoom_handler.transform,
+                    d3.zoomIdentity.translate(transform.x, transform.y))
+                .on("end", highlightNode(selected));
+        }
+        reset(zoomCallBack);
+    }
+
+    function highlightNode(d) {
+        var name = d.name ? d.name.toLowerCase() : d.id;
+
+        if (toggle == 0) {
+            // Ternary operator restyles links and nodes if they are adjacent.
+            link.style('stroke-opacity', function (l) {
+
+                var test = l.target == d || l.target.name.toLowerCase() === name;
+                test = test || (l.source == d || l.source.name.toLowerCase() === name);
+                return test ? 1 : 0.1;
+            });
+            node.style('opacity', function (n) {
+                let n1 = d.name ? d.name.toLowerCase() : d.id;
+                let n2 = n.name ? n.name.toLowerCase() : n.id;
+                var test = linkedByIndex[n1 + ',' + n2] === 1;
+                test = test || linkedByIndex[n2 + ',' + n1] === 1;
+                test = test || (n2 === name);
+                return test ? 1 : 0.1;
+            });
+            //d3.select(this).style('opacity', 1);
+
+            var transform = {
+                x: width / 2 - k * d.x,
+                y: height / 2 - k * d.y
+            };
+            // g.transition().duration(750)
+            //     .call(zoom_handler.transform,
+            //         d3.zoomIdentity.translate(transform.x, transform.y));
+            toggle = 1;
+        }
+        else {
+            // Restore nodes and links to normal opacity.
+            link.style('stroke-opacity', '0.6');
+            node.style('opacity', '1');
+            //reset();
+            toggle = 0;
+        }
+    }
+    d3.csv("../data/words.csv", function (data) {
+        data.forEach(function (d) {
+            if (d.word) {
+                var temp = d.word.split("|");
+                idNodeMap[d.id] = temp[0];
+                textToIdMap[temp[0].toLowerCase()] = d.id;
+                if (d.id > maxId) {
+                    maxId = d.id;
+                }
+            }
+        });
+        d3.csv("../data/edges.csv", function (data) {
             data.forEach(function (d) {
                 var skipFlag = 1;
                 for (i = 0; i < links.length; i++) {
-                    link = links[i];
-                    if (link.source == idNodeMap[d.target] && link.target == idNodeMap[d.source]) {
+                    var thisLink = links[i];
+                    if (thisLink.source == idNodeMap[d.target] && thisLink.target == idNodeMap[d.source]) {
                         skipFlag = 0;
                         break;
                     }
                 }
                 if (skipFlag) {
-                    var tempdata = { source: idNodeMap[d.source], target: idNodeMap[d.target] };
+                    var tempdata = { source: idNodeMap[d.source], target: idNodeMap[d.target], similarity: d.similarity };
                     links.push(tempdata);
                 }
             });
-        }).then(function (data) {
-            links.forEach(function (link) {
-                link.source = nodes[link.source] ||
-                    (nodes[link.source] = { name: link.source });
-                link.target = nodes[link.target] ||
-                    (nodes[link.target] = { name: link.target });
+
+            links.forEach(function (thisLink) {
+                thisLink.source = nodes[thisLink.source] ||
+                    (nodes[thisLink.source] = { name: thisLink.source });
+                thisLink.target = nodes[thisLink.target] ||
+                    (nodes[thisLink.target] = { name: thisLink.target });
             });
-
-            var width = 1200,
-                height = 700,
-                active = d3.select(null);
-
-            var toggle = 0;
-
             // Make object of all neighboring nodes.
-            var linkedByIndex = {};
             links.forEach(function (d) {
-                linkedByIndex[d.source + ',' + d.target] = 1;
-                linkedByIndex[d.target + ',' + d.source] = 1;
+                let source = d.source.name.toLowerCase();
+                let target = d.target.name.toLowerCase();
+                linkedByIndex[source + ',' + target] = 1;
+                linkedByIndex[target + ',' + source] = 1;
             });
 
-            // A function to test if two nodes are neighboring.
-            function neighboring(a, b) {
-                return linkedByIndex[a.index + ',' + b.index];
-            }
-            var autocompForm = d3.select("body").append("form").attr("autocomplete", "off");
+            nodes_data = d3.values(nodes);
+
+            var autocompForm = d3.select("body").append("form")
+                .attr("autocomplete", "off")
+                .attr("style", "display:block;");
             var autocompDiv = autocompForm.append("div")
                 .attr("class", "autocomplete")
-                .attr("style", "width:300px;");
+                .attr("style", "width:275px;margin:2px");
 
             var autocompEntry = autocompDiv.append("input")
                 .attr("id", "myInput")
                 .attr("type", "text")
+                .attr("style", "width:250px;display:inline-block;")
                 .attr("name", "Words")
                 .attr("placeholder", "Words");
 
-            console.log(Object.keys(nodes));
             autocomplete(document.getElementById("myInput"), Object.keys(nodes));
-
-            // var search = d3.select("body").append('form').attr('onsubmit', 'return false;');
-
-            // var box = search.append('input')
-            //     .attr('type', 'text')
-            //     .attr('id', 'searchTerm')
-            //     .attr('placeholder', 'Type to search...');
-
             var button = autocompForm.append('input')
                 .attr('type', 'button')
                 .attr('value', 'Search')
                 .on('click', function () { searchNodes(); });
+
             function searchNodes() {
                 // var term = document.getElementById('searchTerm').value;
                 var term = document.getElementById('myInput').value;
-                var selected = svg.selectAll('.node').filter(function (d, i) {
-                    return d.name.toLowerCase().search(term.toLowerCase()) == -1;
-                });
-                var path = svg.selectAll('path');
-                svg.call(zoom.transform, d3.zoomIdentity.translate(100, 50).scale(0.8));
-                console.log(selected);
-                selected.style('opacity', '0');
-                path.style('stroke-opacity', '0');
-                d3.selectAll('.node').transition().duration(5000).style('opacity', '1');
-                d3.selectAll('path').transition().duration(5000).style('stroke-opacity', '0.6');
-            }
-
-            var force = d3.forceSimulation()
-                .nodes(d3.values(nodes))
-                .force("link", d3.forceLink(links).distance(100))
-                .force('center', d3.forceCenter(width / 2, height / 2))
-                .force("x", d3.forceX())
-                .force("y", d3.forceY())
-                .force("charge", d3.forceManyBody().strength(-250))
-                .alphaTarget(1)
-                .on("tick", tick)
-
-            var v = d3.scaleLinear()
-                .range([0, 100]);
-
-            v.domain([0, d3.max(links, function (d) { return d.value; })]);
-
-            var container = d3.select("body").append("div")
-                .attr("id", "halfpage");
-
-            var zoom = d3.zoom().scaleExtent([0.25, 8]).on("zoom", zoomed);
-            function clicked(d) {
-                if (active.node() === this) return reset();
-                active.classed("active", false);
-                active = d3.select(this).classed("active", true);
-
-                var bounds = node.bounds(d),
-                    dx = bounds[1][0] - bounds[0][0],
-                    dy = bounds[1][1] - bounds[0][1],
-                    x = (bounds[0][0] + bounds[1][0]) / 2,
-                    y = (bounds[0][1] + bounds[1][1]) / 2
-                scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height))),
-                    translate = [width / 2 - scale * x, height / 2 - scale * y];
-                console.log(x, y, dx, dy);
-
-                svg.transition()
-                    .duration(750).call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)); // updated for d3 v4
-            }
-            function reset() {
-                active.classed("active", false);
-                active = d3.select(null);
-
-                svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
-            }
-
-            function zoomed() {
-                d3.event.transform.x = 0;
-                d3.event.transform.y = 0;
-
-                svg.style("stroke-width", 1.5 / d3.event.transform.k + "px");
-                svg.attr("transform", d3.event.transform);
-            }
-
-            // If the drag behavior prevents the default click,
-            // also stop propagation so we don’t click-to-zoom.
-            function stopped() {
-                if (d3.event.defaultPrevented) d3.event.stopPropagation();
-            }
-
-            var svg = container.append("svg")
-                .attr("width", width + "px")
-                .attr("height", height + "px")
-                .attr("display", "block")
-                .attr("margin", "auto")
-                .attr("overflow", "visible")
-                .attr("background-position", "left top")
-                .on("click", stopped, true);
-            // .call(d3.zoom().on("zoom", function () {
-            //     svg.attr("transform", d3.event.transform)
-            // }));
-            svg.call(zoom);
-            svg.call(zoom.transform, d3.zoomIdentity.translate(100, 50).scale(0.4));
-
-            svg.append("svg:defs").selectAll("marker")
-                .data(["end"])
-                .enter().append("svg:marker")
-                .attr("id", String)
-                .attr("viewBox", "0 -5 10 10")
-                .attr("refX", 15)
-                .attr("refY", -1.5)
-                .attr("markerWidth", 6)
-                .attr("markerHeight", 6)
-                .attr("orient", "auto")
-                .append("svg:path")
-                .attr("d", "M0,-5L10,0L0,5")
-                .on("click", reset);
-
-            // add the links and the arrows
-            var path = svg.append("g")
-                .selectAll("path")
-                .data(links)
-                .enter()
-                .append("path")
-                .attr("class", function (d) { return "link " + d.type; })
-                .style("stroke", "black");
-
-            // define the nodes
-            var node = svg.selectAll(".node")
-                .data(force.nodes())
-                .enter().append("g")
-                .attr("class", "node")
-                .on("dblclick", dblclick)
-                .on("click", clicked)
-                .on('click', function (d, i) {
-                    if (toggle == 0) {
-                        // Ternary operator restyles links and nodes if they are adjacent.
-                        d3.selectAll('path').style('stroke-opacity', function (l) {
-                            return l.target == d || l.source == d ? 1 : 0.1;
-                        });
-                        d3.selectAll('.node').style('opacity', function (n) {
-                            return neighboring(d, n) ? 1 : 0.1;
-                        });
-                        d3.select(this).style('opacity', 1);
-                        toggle = 1;
-                    }
-                    else {
-                        // Restore nodes and links to normal opacity.
-                        d3.selectAll('path').style('stroke-opacity', '0.6');
-                        d3.selectAll('.node').style('opacity', '1');
-                        toggle = 0;
-                    }
-                })
-                .call(d3.drag()
-                    .on("start", dragstarted)
-                    .on("drag", dragged)
-                    .on("end", dragended));
-
-            function myNodeWeight(d) {
-                d.weight = links.filter(function (l) {
-                    return l.source.index == d.index || l.target.index == d.index
-                }).length;
-
-                return 5 + d.weight;
-            }
-
-            var myColor = d3.scaleSequential()
-                .domain([1, 9])
-                .interpolator(d3.interpolateWarm);
-
-
-            function dblclick(d) {
-                if (d.fixed == true) {
-                    d3.select(this).select("circle")
-                        .style("fill", function (d) { return myColor(myNodeWeight(d)) });
-                    d.fixed = false
-                } else {
-                    d3.select(this).select("circle")
-                        .style("fill", "red");
-                    d.fixed = true;
+                var selected = document.getElementById(term.toLowerCase());
+                if (selected === undefined) {
+                    reset();
+                    return;
                 }
-            };
 
-            // add the nodes
-            node.append("circle")
-                .attr("r", function (d) {
-                    return myNodeWeight(d)
-                })
-                .attr("fill", function (d) {
-                    return myColor(myNodeWeight(d));
-                });
+                // var path = d3.selectAll('line');
+                // selected.childNodes[0].attr("style",'opacity=0');
+                // selected.childNodes[1].attr("style",'opacity=0');
+                // node.style('opacity', '1');
+                // circle.style('opacity', '1');
+                // labels.style('opacity', '1');
+                // selected.childNodes[0].style.opacity = 0;
+                // selected.childNodes[1].style.opacity = 0;
+                // selected.childNodes[1].style.color = "#FF00FF";
+                // link.style('stroke-opacity', '0');
+                zoomToNodeByName(term);
+                // node.transition().duration(2000).style('opacity', '1');
+                // circle.transition().duration(1000).style('opacity', '1');
+                // labels.transition().duration(1000).style('opacity', '1');
+                // link.transition().duration(2000).style('stroke-opacity', '0.6');
+            }
 
+            var edgeForm = d3.select("body").append("form")
+                .attr("id", "edgeForm")
+                .attr("autocomplete", "off")
+                .attr("style", "display:block;");
+            var edgeDiv = edgeForm.append("div")
+                .attr("class", "autocomplete")
+                .attr("style", "width:550px;display:inline-block;margin:2px");
 
+            var sourceEntry = edgeDiv.append("input")
+                .attr("id", "edgeSource")
+                .attr("type", "text")
+                .attr("style", "width:250px;display:inline-block;")
+                .attr("name", "Source")
+                .attr("placeholder", "Source");
 
-            node.append("text")
-                .attr("x", 13)
-                .attr("y", 2)
-                .text(function (d) { return d.name; })
-                .style("font-weight", "800");
+            var destEntry = edgeDiv.append("input")
+                .attr("id", "edgeDest")
+                .attr("type", "text")
+                .attr("style", "width:250px;display:inline-block;margin-left:25px")
+                .attr("name", "Destination")
+                .attr("placeholder", "Destination");
 
-            svg.append("text")
-                .attr("x", width - 250)
-                .attr("y", 50)
-                .text("psn6")
-                .style("font-size", "14px");
+            autocomplete(document.getElementById("edgeSource"), Object.keys(nodes));
+            autocomplete(document.getElementById("edgeDest"), Object.keys(nodes));
+            var edgeButton = edgeForm.append('input')
+                .attr('type', 'button')
+                .attr("style", "width:100px;display:inline-block;")
+                .attr('value', 'Add Edge')
+                .on('click', function () { addEdge(); });
 
-            // add the curvy lines
-            function tick() {
-                path.attr("d", function (d) {
-                    var dx = d.target.x - d.source.x,
-                        dy = d.target.y - d.source.y,
-                        dr = Math.sqrt(dx * dx + dy * dy);
-                    return "M" +
-                        d.source.x + "," +
-                        d.source.y + "A" +
-                        dr + "," + dr + " 0 0,1 " +
-                        d.target.x + "," +
-                        d.target.y;
-                });
+            function addEdge() {
+                var source = document.getElementById("edgeSource").value.toLowerCase();
+                var target = document.getElementById("edgeDest").value.toLowerCase();
+                // validation?
+                // add edge
+                let sourceId = idNodeMap[textToIdMap[source]];
+                let targetId = idNodeMap[textToIdMap[target]];
+                let linkdata = {
+                    "source": nodes[sourceId],
+                    "target": nodes[targetId],
+                    "similarity": 0.9999
+                };
+                links.push(linkdata);
+                linkedByIndex[source + ',' + target] = 0;
+                linkedByIndex[target + ',' + source] = 0;
+                // redraw
+                drawChart();
+                // zoom to node
+                zoomToNodeByName(source);
+                window.alert("The edge has been successfully added");
 
-                node
-                    .attr("transform", function (d) {
-                        return "translate(" + d.x + "," + d.y + ")";
-                    })
-            };
+                document.getElementById("edgeForm").reset();
+            }
 
-            function dragstarted(d) {
-                if (!d3.event.active) force.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            };
+            var edgeRemButton = edgeForm.append('input')
+                .attr('type', 'button')
+                .attr("style", "width:125px;display:inline-block;margin-left:25px")
+                .attr('value', 'Delete Edge')
+                .on('click', function () { deleteEdge(); });
 
-            function dragged(d) {
-                d.fx = d3.event.x;
-                d.fy = d3.event.y;
-            };
+            function deleteEdge() {
+                var source = document.getElementById("edgeSource").value.toLowerCase();
+                var target = document.getElementById("edgeDest").value.toLowerCase();
+                // remove edge
+                for (let i = links.length - 1; i >= 0; i--) {
+                    if (links[i].source.name.toLowerCase() === source
+                        && links[i].target.name.toLowerCase() === target) {
+                        links.splice(i, 1);
+                    }
+                    else if (links[i].source.name.toLowerCase() === target
+                        && links[i].target.name.toLowerCase() === source) {
+                        links.splice(i, 1);
+                    }
+                }
 
-            function dragended(d) {
-                if (!d3.event.active) force.alphaTarget(0);
-                if (d.fixed == true) {
-                    d.fx = d.x;
-                    d.fy = d.y;
+                linkedByIndex[source + ',' + target] = 0;
+                linkedByIndex[target + ',' + source] = 0;
+                // redraw
+                drawChart();
+                // zoom to node
+                zoomToNodeByName(source);
+                window.alert("The edge has been successfully deleted");
+
+                document.getElementById("edgeForm").reset();
+            }
+
+            var nodeForm = d3.select("body").append("form")
+                .attr("id", "nodeForm")
+                .attr("autocomplete", "off")
+                .attr("style", "display:block;");
+            var nodeDiv = nodeForm.append("div")
+                .attr("class", "autocomplete")
+                .attr("style", "width:550px;display:inline-block;margin:2px");
+
+            var nodeEntry = nodeDiv.append("input")
+                .attr("id", "nodeEntry")
+                .attr("type", "text")
+                .attr("style", "width:250px;display:inline-block;")
+                .attr("name", "Node")
+                .attr("placeholder", "Node");
+
+            autocomplete(document.getElementById("nodeEntry"), Object.keys(nodes));
+            var nodeAddButton = nodeForm.append('input')
+                .attr('type', 'button')
+                .attr("style", "width:100px;display:inline-block;")
+                .attr('value', 'Add Node')
+                .on('click', function () { addNode(); });
+
+            function addNode() {
+                var source = document.getElementById("nodeEntry").value.toLowerCase();
+
+                // validation?
+                // add Node
+                if (textToIdMap[source]) {
+                    window.alert("The Node -" + source.toUpperCase() + "- already exists");
                 }
                 else {
-                    d.fx = null;
-                    d.fy = null;
+                    maxId = maxId + 1;
+                    textToIdMap[source] = maxId;
+                    idNodeMap[maxId] = source;
+                    nodes[source] = { name: source };
+                    nodes_data.push(nodes[source]);
+                    window.alert("The Node -" + source.toUpperCase() + "- has been successfully added");
+                    // redraw
+                    drawChart();
                 }
-            };
+                // zoom to node
+                zoomToNodeByName(source);
 
+                document.getElementById("nodeForm").reset();
+            }
+
+            var nodeRemButton = nodeForm.append('input')
+                .attr('type', 'button')
+                .attr("style", "width:125px;display:inline-block;margin-left:25px")
+                .attr('value', 'Delete Node')
+                .on('click', function () { deleteNode(); });
+
+            function deleteNode() {
+                var source = document.getElementById("nodeEntry").value.toLowerCase();
+                var Flag = 0;
+                // remove Node
+                if (textToIdMap[source]) {
+                    var deleteId = textToIdMap[source];
+                    delete textToIdMap[source];
+                    delete idNodeMap[deleteId];
+                    delete nodes[source];
+                    for (let i = nodes_data.length - 1; i >= 0; i--) {
+                        if (nodes_data[i].name.toLowerCase() === source) {
+                            nodes_data.splice(i, 1);
+                        }
+                    }
+                    //delete the edges associated with the node when you delete it
+                    for (let i = links.length - 1; i >= 0; i--) {
+                        if (links[i].source.name.toLowerCase() === source
+                            || links[i].target.name.toLowerCase() === source) {
+
+                            linkedByIndex[links[i].source + ',' + links[i].target] = 0;
+                            linkedByIndex[links[i].target + ',' + links[i].source] = 0;
+                            links.splice(i, 1);
+                        }
+                    }
+                    // redraw
+                    drawChart();
+
+                    window.alert("The Node -" + source.toUpperCase() + "- has been successfully deleted");
+                }
+                else {
+                    window.alert("The Node -" + source.toUpperCase() + "- does not exists");
+                }
+                document.getElementById("nodeForm").reset();
+            }
+
+
+            container = d3.select("body").append("div")
+                .attr("id", "halfpage");
+            drawChart(container);
+
+            var footer = d3.select("body").append("div")
+                .attr("id", "footer")
+                .attr("align", "left")
+                .style('width', "1800px");
+
+            footer.append("text")
+                .style('width', '1800px')
+                .style('text-align', 'right')
+                .text('CSE 6242(Spring2020) -- Team 189 -- (Prashanthi Narayanamangalam, Christopher Roth, Jonathan Storey)');
 
         });
+    });
 
-
-    </script>
-</body>
-
-</html>
+</script>
