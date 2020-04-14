@@ -32,7 +32,7 @@ div#halfpage {
     border: 2px solid #000;
     overflow-y: auto;
     margin-top: 15px;
-    margin-left: 25px;
+    margin-left: 30px;
 }
 
 
@@ -113,6 +113,7 @@ input[type=submit] {
     background-color: DodgerBlue !important;
     color: #ffffff;
 }
+
 h1 {
     text-align: center;
 }

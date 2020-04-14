@@ -4,7 +4,7 @@ import sqlite3
 import argparse
 from tqdm import tqdm
 
-def get_words(abstract_db, keyword_db, year=2020, max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1):
+def get_words(abstract_db, keyword_db, year=2020, max_phrases_per_paper=10, max_words_in_phrase=2, max_score=1.0):
     
     # Connect to abstract database
     conn = sqlite3.connect(abstract_db)
@@ -26,8 +26,8 @@ def get_words(abstract_db, keyword_db, year=2020, max_phrases_per_paper=10, max_
         for paper in papers:
             words = kw_extractor.extract_keywords(paper[1])
             for word in words:
-                if word[1] < max_score:
-                    keywords.append((paper[0],word[0],word[1]))    
+                if word[0] < max_score:
+                    keywords.append((paper[0],word[1],word[0]))    
             pbar.update(1)
     
     # Connect to keywords database
