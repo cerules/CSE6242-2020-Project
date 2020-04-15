@@ -20,19 +20,21 @@ limit = str(args.keywordLimit)
 # load keywords
 conn = sqlite3.connect(args.keywordDB)
 c = conn.cursor()
-c.execute(f"SELECT DISTINCT words from keywords limit {limit};")
+c.execute(f"SELECT words, COUNT(paperID) AS word_count FROM keywords GROUP BY words ORDER BY word_count DESC limit {limit};")
 
 vectoredKeywords = []
 keyword = c.fetchone()
-count = 0
+senses=s2v.senses
+senses.remove("PUNCT") # remove punctation
+senses.remove("X") # remove uncategorized words
 while keyword is not None:
-    keyword = str(keyword)[2:-3].replace(" ", "_").lower()
-    bestSense = s2v.get_best_sense(keyword)
-    if bestSense is not None and bestSense != "":
-        vectoredKeywords.append(bestSense)
-    count = count + 1
-    if count % 100000 == 0:
-        print(count)
+    keyword = keyword[0]
+    keyword=str(keyword)
+    if keyword.isascii(): # filter out obvious non-english words
+        keyword = keyword.replace(" ", "_").lower()
+        bestSense = s2v.get_best_sense(keyword, senses=senses)
+        if bestSense is not None and bestSense != "":
+            vectoredKeywords.append(bestSense)
     keyword = c.fetchone()
 
 vectoredKeywords.sort()
