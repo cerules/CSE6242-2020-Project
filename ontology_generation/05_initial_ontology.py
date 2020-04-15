@@ -7,28 +7,36 @@ import os
 parser = argparse.ArgumentParser(description="create initial ontology graph")
 parser.add_argument("--keywordDB", type=str, default="../data/keywords.db", required=False, help="path to sqlite keywords db file")
 parser.add_argument("--s2vModel", type=str, default="../data/sense2vec_train/05", required=False, help="path to trained sense2vec model")
-parser.add_argument("--outputDir", type=str, default="../data/ontologyGraph/", required=False, help="output directory")
+parser.add_argument("--outputDir", type=str, default="../data/", required=False, help="output directory")
 parser.add_argument("--threshold", type=float, default=0.6, required=False, help="cosine similarity threshold used to create edges between keywords")
+parser.add_argument("--keywordLimit", type=int, default=100000, required=False, help="max number of keywords to create the graph from")
 args = parser.parse_args()
 
 # load s2v model
 s2v = Sense2Vec().from_disk(args.s2vModel)
 words = list(s2v.keys())
+limit = str(args.keywordLimit)
 
 # load keywords
 conn = sqlite3.connect(args.keywordDB)
 c = conn.cursor()
-c.execute("SELECT DISTINCT words from keywords")
+c.execute(f"SELECT words, COUNT(paperID) AS word_count FROM keywords GROUP BY words ORDER BY word_count DESC limit {limit};")
 
-keywords = c.fetchall()
-keywords = list(map(lambda  w : str(w)[2:-3].replace(" ", "_").lower(), keywords))
-
-# find kewyords with word vectors
 vectoredKeywords = []
-for keyword in keywords:
-    bestSense = s2v.get_best_sense(keyword)
-    if bestSense is not None and bestSense != "":
-        vectoredKeywords.append(bestSense)
+keyword = c.fetchone()
+senses=s2v.senses
+senses.remove("PUNCT") # remove punctation
+senses.remove("X") # remove uncategorized words
+while keyword is not None:
+    keyword = keyword[0]
+    keyword=str(keyword)
+    if keyword.isascii(): # filter out obvious non-english words
+        keyword = keyword.replace(" ", "_").lower()
+        bestSense = s2v.get_best_sense(keyword, senses=senses)
+        if bestSense is not None and bestSense != "":
+            vectoredKeywords.append(bestSense)
+    keyword = c.fetchone()
+
 vectoredKeywords.sort()
 
 # find related words based on similarity threshold
