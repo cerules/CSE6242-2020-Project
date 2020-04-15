@@ -1,6 +1,15 @@
 # OntoVec
 
-## Step 0: Install dependencies
+## Description
+
+This repository contains python scripts for downloading Semantic Scholar Computer Science paper abstracts and constructing a knowledge graph from them. This code is in the `ontology_generation/` folder.
+
+First we train a GloVe model using sense2vec on the abstracts. Then we extract keywords from the abstracts. We create the knowledge graph by drawing an edge between keywords whose word vector similarity is within a given threshold.
+
+The graph can then be viewed and editing with a local web application. This code is is in the `ui/` folder.
+
+
+## Installation
 
 If you are using Windows it is recommended to use the Windows Subsystem for Linux as it is easier to compile the dependencies.
 
@@ -20,8 +29,16 @@ cd ./GloVe
 make
 ```
 
+Clone the sense2vec source code (will need scripts in the repository in addition to installing the pip package)
 
-## Step 1: Download Data
+This fork contains the same version we used for the project.
+```sh
+git clone https://github.com/cerules/sense2vec.git
+```
+
+## Execution
+
+### Step 1: Download Data
 
 Downloads academic paper metadata from [Semantic Scholar](https://www.semanticscholar.org/)'s [Open Research Corpus](http://s2-public-api-prod.us-west-2.elasticbeanstalk.com/corpus/)
 
@@ -38,7 +55,7 @@ python ./01_download_data.py --fileLimit 5
 ```
 
 
-## Step 2: Extract Sentences
+### Step 2: Extract Sentences
 
 Extracts sentences from paper abstracts
 
@@ -54,7 +71,7 @@ In practice we set the limit argument to 100000
 python ./02_extract_sentences.py --limit 100000
 ```
 
-## step 3: Extract Keywords
+### step 3: Extract Keywords
 
 Uses [YAKE!](https://github.com/LIAAD/yake) to extract keywords from paper abstracts.
 Make sure you install it first.
@@ -75,7 +92,7 @@ In practice we extracted keywords from all papers with year >= 2010
 python ./03_extract_keywords.py --yearCutOff 2010
 ```
 
-## step 4: Train sense2vec glove model
+### step 4: Train sense2vec glove model
 
 Trains a sense2vec glove model on the paper abstracts using the sentences extracted in step 2.
 
@@ -87,7 +104,7 @@ input arguments depend on previous step's output locations. Glove build director
 ./04_sense2vec_train.sh ../../GloVe/build/ ../../sense2vec/scripts/ ../data/sense2vec_train/
 ```
 
-## step 5: Connect keywords based on word vector distance
+### step 5: Connect keywords based on word vector distance
 
 Uses the word vectors generated in step 4 and the keywords generated in step 3 to ouptut a node and edges file. The nodes consist of keywords who have word vectors. Edges exist between two nodes if the cosine similarity of their two word vectors is greater than the given threshold.
 
@@ -119,7 +136,7 @@ The files should look something like the examples below.
 |...|
 
 
-## step 6: visualize/modify
+### step 6: visualize/modify
 
 Visualize the words and edges in a graph.
 Edges can be added and removed as seen fit.
