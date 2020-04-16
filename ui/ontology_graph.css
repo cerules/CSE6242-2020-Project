@@ -119,10 +119,15 @@ h1 {
 }
 
 form {
-    width: 825px;
+    width: 850px;
     height: 40px;
     margin-top: 5px;
     margin-bottom: 5px;
     border: 1px solid black;
     box-sizing: border-box;
+}
+
+input#mybutton {
+    background-color: #555555;
+    color: white;
 }

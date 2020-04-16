@@ -253,7 +253,7 @@ function drawChart() {
     function drag_start(d) {
         if (!d3.event.active) simulation.alphaTarget(0.3).restart();
         simulation.restart();
-        iterations = 100;
+        iterations = 25;
         highlightNode(d);
         d.fx = d.x;
         d.fy = d.y;
@@ -268,7 +268,7 @@ function drawChart() {
     function drag_end(d) {
         if (!d3.event.active) simulation.alphaTarget(0);
         simulation.restart();
-        iterations = 100;
+        iterations = 25;
         d.fx = null;
         d.fy = null;
     }
@@ -286,7 +286,7 @@ function drawChart() {
     }
 
     function tickActions() {
-        if (iterations % 100 === 0 && !document.getElementById("loadingdiv")) {
+        if (iterations % 25 === 0 && !document.getElementById("loadingdiv")) {
             var loadingDiv = d3.select("body")
                 .append("div")
                 .attr("id", "loadingdiv");
@@ -310,7 +310,7 @@ function drawChart() {
             .attr("x2", function (d) { return d.target.x; })
             .attr("y2", function (d) { return d.target.y; });
 
-        if (iterations > 150) {
+        if (iterations > 50) {
             simulation.stop();
             document.getElementById("loadingdiv").remove();
         }
@@ -443,6 +443,7 @@ d3.csv("../data/words.csv", function (data) {
             .attr("placeholder", "Words");
 
         var button = autocompForm.append('input')
+            .attr("id", "mybutton")
             .attr('type', 'button')
             .attr('value', 'Search')
             .on('click', function () { searchNodes(); });
@@ -501,6 +502,7 @@ d3.csv("../data/words.csv", function (data) {
 
         var nodeAddButton = nodeForm.append('input')
             .attr('type', 'button')
+            .attr("id", "mybutton")
             .attr("style", "width:100px;display:inline-block;")
             .attr('value', 'Add Node')
             .on('click', function () { addNode(); });
@@ -550,6 +552,7 @@ d3.csv("../data/words.csv", function (data) {
 
         var nodeRemButton = nodeForm.append('input')
             .attr('type', 'button')
+            .attr("id", "mybutton")
             .attr("style", "width:125px;display:inline-block;margin-left:25px")
             .attr('value', 'Delete Node')
             .on('click', function () { deleteNode(); });
@@ -619,11 +622,10 @@ d3.csv("../data/words.csv", function (data) {
 
         var edgeButton = edgeForm.append('input')
             .attr('type', 'button')
+            .attr("id", "mybutton")
             .attr("style", "width:100px;display:inline-block;")
             .attr('value', 'Add Edge')
             .on('click', function () { addEdge(); });
-
-        setupAutocompletes();
 
         function addEdge() {
             var source = document.getElementById("edgeSource").value;
@@ -678,9 +680,12 @@ d3.csv("../data/words.csv", function (data) {
 
         var edgeRemButton = edgeForm.append('input')
             .attr('type', 'button')
+            .attr("id", "mybutton")
             .attr("style", "width:125px;display:inline-block;margin-left:25px")
             .attr('value', 'Delete Edge')
             .on('click', function () { deleteEdge(); });
+        
+        setupAutocompletes();
 
         function deleteEdge() {
             var source = document.getElementById("edgeSource").value;

@@ -122,12 +122,17 @@
     }
 
     form {
-        width: 825px;
+        width: 850px;
         height: 40px;
         margin-top: 5px;
         margin-bottom: 5px;
         border: 1px solid black;
         box-sizing: border-box;
+    }
+
+    input#mybutton {
+        background-color: #555555;
+        color: white;
     }
 </style>
 <script src="lib/d3.v4.min.js"></script>
@@ -406,7 +411,7 @@
         function drag_start(d) {
             if (!d3.event.active) simulation.alphaTarget(0.3).restart();
             simulation.restart();
-            iterations = 100;
+            iterations = 25;
             highlightNode(d);
             d.fx = d.x;
             d.fy = d.y;
@@ -421,7 +426,7 @@
         function drag_end(d) {
             if (!d3.event.active) simulation.alphaTarget(0);
             simulation.restart();
-            iterations = 100;
+            iterations = 25;
             d.fx = null;
             d.fy = null;
         }
@@ -439,7 +444,7 @@
         }
 
         function tickActions() {
-            if (iterations % 100 === 0 && !document.getElementById("loadingdiv")) {
+            if (iterations % 25 === 0 && !document.getElementById("loadingdiv")) {
                 var loadingDiv = d3.select("body")
                     .append("div")
                     .attr("id", "loadingdiv");
@@ -463,7 +468,7 @@
                 .attr("x2", function (d) { return d.target.x; })
                 .attr("y2", function (d) { return d.target.y; });
 
-            if (iterations > 150) {
+            if (iterations > 50) {
                 simulation.stop();
                 document.getElementById("loadingdiv").remove();
             }
@@ -596,6 +601,7 @@
                 .attr("placeholder", "Words");
 
             var button = autocompForm.append('input')
+                .attr("id", "mybutton")
                 .attr('type', 'button')
                 .attr('value', 'Search')
                 .on('click', function () { searchNodes(); });
@@ -654,6 +660,7 @@
 
             var nodeAddButton = nodeForm.append('input')
                 .attr('type', 'button')
+                .attr("id", "mybutton")
                 .attr("style", "width:100px;display:inline-block;")
                 .attr('value', 'Add Node')
                 .on('click', function () { addNode(); });
@@ -703,6 +710,7 @@
 
             var nodeRemButton = nodeForm.append('input')
                 .attr('type', 'button')
+                .attr("id", "mybutton")
                 .attr("style", "width:125px;display:inline-block;margin-left:25px")
                 .attr('value', 'Delete Node')
                 .on('click', function () { deleteNode(); });
@@ -772,11 +780,10 @@
 
             var edgeButton = edgeForm.append('input')
                 .attr('type', 'button')
+                .attr("id", "mybutton")
                 .attr("style", "width:100px;display:inline-block;")
                 .attr('value', 'Add Edge')
                 .on('click', function () { addEdge(); });
-
-            setupAutocompletes();
 
             function addEdge() {
                 var source = document.getElementById("edgeSource").value;
@@ -831,9 +838,12 @@
 
             var edgeRemButton = edgeForm.append('input')
                 .attr('type', 'button')
+                .attr("id", "mybutton")
                 .attr("style", "width:125px;display:inline-block;margin-left:25px")
                 .attr('value', 'Delete Edge')
                 .on('click', function () { deleteEdge(); });
+            
+            setupAutocompletes();
 
             function deleteEdge() {
                 var source = document.getElementById("edgeSource").value;
