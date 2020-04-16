@@ -31,7 +31,7 @@
 
     div#halfpage {
         width: 1807px;
-        height: 757px;
+        height: 807px;
         border: 2px solid #000;
         overflow-y: auto;
         margin-top: 15px;
@@ -123,12 +123,26 @@
 </style>
 <script src="lib/d3.v4.min.js"></script>
 <h1>OntoVec</h1>
-<p>Placeholder for instruction. Explain about graph<br>explain about node inseration and deletion. edge insertion and
-    deletion</p>
+<p>Welcome to OntoVec. Below is the Ontology Graph that contains keywords extracted from several Computer Science paper
+    abstracts.
+    Each node represents the word (keyword or phrase) and the edges between the nodes represent the similarity between
+    the
+    words (thicker the edge the greater the similarity). The size and color of the node represents its degree (number of
+    connections).<br>
+    Some of the features you can try are:
+    <ul style="list-style-type:disc;">
+        <li>Zoom in and out to explore the graph. </li>
+        <li>Click on a node to highlight it and its neighbors. </li>
+        <li>Drag a node to reposition it.</li>
+        <li>Search for a word using the SearchBox(use autocomplete for find words in the graph). </li>
+        <li>Add/remove an edge between two nodes by entering the words in Source and Destination textbox(by default it adds an edge with highest similarity). </li>
+        <li>Add/delete nodes by entering the word in Node textbox. </li>
+    </ul>
+</p>
 <script>
 
     var width = 1800;
-    var height = 750;
+    var height = 800;
     var active = d3.select(null);
 
     var thershold = 0.6;
@@ -580,6 +594,11 @@
                 // var term = document.getElementById('searchTerm').value;
                 var term = document.getElementById('myInput').value;
                 var selected = document.getElementById(term.toLowerCase());
+                if (!nodes[term]) {
+                    showAlert("The word -" + term +"- does not exist.");
+                    document.getElementById("edgeForm").reset();
+                    return;
+                }
                 if (selected === undefined) {
                     reset();
                     return;

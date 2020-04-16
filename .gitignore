@@ -1,5 +1,6 @@
 # data folder
-data/
+data/*
+!data/graph_0.6_threshold/
 
 # SQLite Database
 *.db

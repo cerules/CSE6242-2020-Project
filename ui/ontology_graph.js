@@ -1,5 +1,5 @@
 var width = 1800;
-var height = 750;
+var height = 800;
 var active = d3.select(null);
 
 var thershold = 0.6;

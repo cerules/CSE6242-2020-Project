@@ -38,6 +38,8 @@ git clone https://github.com/cerules/sense2vec.git
 
 ## Execution
 
+If you would like to skip the graph creation steps you can proceed to step 6 and simply use the existing `edges.csv` and `words.csv` files.
+
 ### Step 1: Download Data
 
 Downloads academic paper metadata from [Semantic Scholar](https://www.semanticscholar.org/)'s [Open Research Corpus](http://s2-public-api-prod.us-west-2.elasticbeanstalk.com/corpus/)
@@ -142,6 +144,9 @@ Visualize the words and edges in a graph.
 Edges can be added and removed as seen fit.
 
 The vizualization step requires a `words.csv` and `edges.csv` file in the `data/` directory. These should be present if you followed the previous steps with default arguments.
+We also included a demo `words.csv` and `edges.csv` file (these files will be overwritten if you followed steps 1-5).
+
+Additionally, our final graph is located in `data/graph_0.6_threshold`. copying those csv files into the `data/` directory will allow the visualization to display them.
 
 The easiest way to run the visualization is with a local python webserver from the root of this git repo.
 
