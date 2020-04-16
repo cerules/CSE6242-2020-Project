@@ -451,6 +451,11 @@ d3.csv("../data/words.csv", function (data) {
             // var term = document.getElementById('searchTerm').value;
             var term = document.getElementById('myInput').value;
             var selected = document.getElementById(term.toLowerCase());
+            if (!nodes[term]) {
+                showAlert("The word -" + term + "- does not exist.");
+                document.getElementById("edgeForm").reset();
+                return;
+            }
             if (selected === undefined) {
                 reset();
                 return;
