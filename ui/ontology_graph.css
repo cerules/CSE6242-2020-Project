@@ -23,7 +23,7 @@
 
 body {
     background-color: white;
-    font: 16px Arial;
+    font: 12px Arial;
 }
 
 div#halfpage {
@@ -71,7 +71,7 @@ input {
     border: 1px solid transparent;
     background-color: #f1f1f1;
     padding: 10px;
-    font-size: 16px;
+    font-size: 12px;
 }
 
 input[type=text] {
@@ -116,4 +116,13 @@ input[type=submit] {
 
 h1 {
     text-align: center;
+}
+
+form {
+    width: 825px;
+    height: 40px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    border: 1px solid black;
+    box-sizing: border-box;
 }

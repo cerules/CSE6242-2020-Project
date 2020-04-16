@@ -450,6 +450,10 @@ d3.csv("../data/words.csv", function (data) {
         function searchNodes() {
             // var term = document.getElementById('searchTerm').value;
             var term = document.getElementById('myInput').value;
+            if (!term) {
+                showAlert("Search term may not be blank.");
+                return;
+            }
             var selected = document.getElementById(term.toLowerCase());
             if (!nodes[term]) {
                 showAlert("The word -" + term + "- does not exist.");
@@ -480,6 +484,117 @@ d3.csv("../data/words.csv", function (data) {
             // link.transition().duration(2000).style('stroke-opacity', '0.6');
         }
 
+        var nodeForm = d3.select("body").append("form")
+            .attr("id", "nodeForm")
+            .attr("autocomplete", "off")
+            .attr("style", "display:block;");
+        var nodeDiv = nodeForm.append("div")
+            .attr("class", "autocomplete")
+            .attr("style", "width:275px;display:inline-block;margin:2px");
+
+        var nodeEntry = nodeDiv.append("input")
+            .attr("id", "nodeEntry")
+            .attr("type", "text")
+            .attr("style", "width:250px;display:inline-block;")
+            .attr("name", "Node")
+            .attr("placeholder", "Node");
+
+        var nodeAddButton = nodeForm.append('input')
+            .attr('type', 'button')
+            .attr("style", "width:100px;display:inline-block;")
+            .attr('value', 'Add Node')
+            .on('click', function () { addNode(); });
+
+
+        function addNode() {
+            var source = document.getElementById("nodeEntry").value;
+            if (!source) {
+                showAlert("Node must have a name.");
+                return;
+            }
+            var sourceLower = source.toLowerCase();
+
+            // validation?
+            // add Node
+            if (nodes[source]) {
+                showAlert("The Node -" + source + "- already exists");
+                document.getElementById("nodeForm").reset();
+                return;
+            }
+            else if (textToIdMap[sourceLower]) {
+                nodes[source] = { name: source };
+                nodes_data.push(nodes[source]);
+                showAlert("The Node -" + source + "- has been successfully added");
+                // redraw
+                drawChart();
+
+                setupAutocompletes();
+            }
+            else {
+                maxId = maxId + 1;
+                textToIdMap[sourceLower] = maxId;
+                idNodeMap[maxId] = source;
+                nodes[source] = { name: source };
+                nodes_data.push(nodes[source]);
+                showAlert("The Node -" + source + "- has been successfully added");
+                // redraw
+                drawChart();
+
+                setupAutocompletes();
+            }
+            // zoom to node
+            zoomToNodeByName(source);
+
+            document.getElementById("nodeForm").reset();
+        }
+
+        var nodeRemButton = nodeForm.append('input')
+            .attr('type', 'button')
+            .attr("style", "width:125px;display:inline-block;margin-left:25px")
+            .attr('value', 'Delete Node')
+            .on('click', function () { deleteNode(); });
+
+        function deleteNode() {
+            var source = document.getElementById("nodeEntry").value;
+            if (!source) {
+                showAlert("Node to delete may not be empty.");
+                return;
+            }
+            var sourceLower = source.toLowerCase();
+            var Flag = 0;
+            // remove Node
+            if (nodes[source]) {
+                var nodeId = textToIdMap[sourceLower];
+                delete textToIdMap[sourceLower];
+                delete idNodeMap[nodeId];
+                delete nodes[source];
+                for (let i = nodes_data.length - 1; i >= 0; i--) {
+                    if (nodes_data[i].name.toLowerCase() === sourceLower) {
+                        nodes_data.splice(i, 1);
+                    }
+                }
+                //delete the edges associated with the node when you delete it
+                for (let i = links.length - 1; i >= 0; i--) {
+                    if (links[i].source.name.toLowerCase() === sourceLower
+                        || links[i].target.name.toLowerCase() === sourceLower) {
+
+                        linkedByIndex[links[i].source + ',' + links[i].target] = 0;
+                        linkedByIndex[links[i].target + ',' + links[i].source] = 0;
+                        links.splice(i, 1);
+                    }
+                }
+                // redraw
+                drawChart();
+                setupAutocompletes();
+
+                showAlert("The Node -" + source + "- has been successfully deleted");
+            }
+            else {
+                showAlert("The Node -" + source + "- does not exist");
+            }
+            document.getElementById("nodeForm").reset();
+        }
+
         var edgeForm = d3.select("body").append("form")
             .attr("id", "edgeForm")
             .attr("autocomplete", "off")
@@ -508,11 +623,20 @@ d3.csv("../data/words.csv", function (data) {
             .attr('value', 'Add Edge')
             .on('click', function () { addEdge(); });
 
+        setupAutocompletes();
 
         function addEdge() {
             var source = document.getElementById("edgeSource").value;
+            if (!source) {
+                showAlert("Source node may not be blank.");
+                return;
+            }
             var sourceLower = source.toLowerCase();
             var target = document.getElementById("edgeDest").value;
+            if (!target) {
+                showAlert("Target node may not be blank.");
+                return;
+            }
             var targetLower = target.toLowerCase();
             // validation?
             if (!nodes[source] || !nodes[target]) {
@@ -560,8 +684,16 @@ d3.csv("../data/words.csv", function (data) {
 
         function deleteEdge() {
             var source = document.getElementById("edgeSource").value;
+            if (!source) {
+                showAlert("Source node may not be blank.");
+                return;
+            }
             var sourceLower = source.toLowerCase();
             var target = document.getElementById("edgeDest").value;
+            if (!target) {
+                showAlert("Target node may not be blank.");
+                return;
+            }
             var targetLower = target.toLowerCase();
             // remove edge
             if (!nodes[source] || !nodes[target]) {
@@ -604,111 +736,6 @@ d3.csv("../data/words.csv", function (data) {
 
             document.getElementById("edgeForm").reset();
         }
-
-        var nodeForm = d3.select("body").append("form")
-            .attr("id", "nodeForm")
-            .attr("autocomplete", "off")
-            .attr("style", "display:block;");
-        var nodeDiv = nodeForm.append("div")
-            .attr("class", "autocomplete")
-            .attr("style", "width:550px;display:inline-block;margin:2px");
-
-        var nodeEntry = nodeDiv.append("input")
-            .attr("id", "nodeEntry")
-            .attr("type", "text")
-            .attr("style", "width:250px;display:inline-block;")
-            .attr("name", "Node")
-            .attr("placeholder", "Node");
-
-        var nodeAddButton = nodeForm.append('input')
-            .attr('type', 'button')
-            .attr("style", "width:100px;display:inline-block;")
-            .attr('value', 'Add Node')
-            .on('click', function () { addNode(); });
-
-        setupAutocompletes();
-
-        function addNode() {
-            var source = document.getElementById("nodeEntry").value;
-            var sourceLower = source.toLowerCase();
-
-            // validation?
-            // add Node
-            if (nodes[source]) {
-                showAlert("The Node -" + source + "- already exists");
-                document.getElementById("nodeForm").reset();
-                return;
-            }
-            else if (textToIdMap[sourceLower]) {
-                nodes[source] = { name: source };
-                nodes_data.push(nodes[source]);
-                showAlert("The Node -" + source + "- has been successfully added");
-                // redraw
-                drawChart();
-
-                setupAutocompletes();
-            }
-            else {
-                maxId = maxId + 1;
-                textToIdMap[sourceLower] = maxId;
-                idNodeMap[maxId] = source;
-                nodes[source] = { name: source };
-                nodes_data.push(nodes[source]);
-                showAlert("The Node -" + source + "- has been successfully added");
-                // redraw
-                drawChart();
-
-                setupAutocompletes();
-            }
-            // zoom to node
-            zoomToNodeByName(source);
-
-            document.getElementById("nodeForm").reset();
-        }
-
-        var nodeRemButton = nodeForm.append('input')
-            .attr('type', 'button')
-            .attr("style", "width:125px;display:inline-block;margin-left:25px")
-            .attr('value', 'Delete Node')
-            .on('click', function () { deleteNode(); });
-
-        function deleteNode() {
-            var source = document.getElementById("nodeEntry").value;
-            var sourceLower = source.toLowerCase();
-            var Flag = 0;
-            // remove Node
-            if (nodes[source]) {
-                var nodeId = textToIdMap[sourceLower];
-                delete textToIdMap[sourceLower];
-                delete idNodeMap[nodeId];
-                delete nodes[source];
-                for (let i = nodes_data.length - 1; i >= 0; i--) {
-                    if (nodes_data[i].name.toLowerCase() === sourceLower) {
-                        nodes_data.splice(i, 1);
-                    }
-                }
-                //delete the edges associated with the node when you delete it
-                for (let i = links.length - 1; i >= 0; i--) {
-                    if (links[i].source.name.toLowerCase() === sourceLower
-                        || links[i].target.name.toLowerCase() === sourceLower) {
-
-                        linkedByIndex[links[i].source + ',' + links[i].target] = 0;
-                        linkedByIndex[links[i].target + ',' + links[i].source] = 0;
-                        links.splice(i, 1);
-                    }
-                }
-                // redraw
-                drawChart();
-                setupAutocompletes();
-
-                showAlert("The Node -" + source + "- has been successfully deleted");
-            }
-            else {
-                showAlert("The Node -" + source + "- does not exist");
-            }
-            document.getElementById("nodeForm").reset();
-        }
-
 
         container = d3.select("body").append("div")
             .attr("id", "halfpage");
