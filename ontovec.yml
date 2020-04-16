@@ -8,5 +8,4 @@ dependencies:
   - jupyterlab
   - python=3.8
   - plac
-prefix: <todo:specify a prefix>
 
