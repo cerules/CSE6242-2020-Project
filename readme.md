@@ -44,6 +44,9 @@ If you would like to skip the graph creation steps you can proceed to step 6 and
 
 Downloads academic paper metadata from [Semantic Scholar](https://www.semanticscholar.org/)'s [Open Research Corpus](http://s2-public-api-prod.us-west-2.elasticbeanstalk.com/corpus/)
 
+Waleed Ammar et al. 2018. Construction of the Literature Graph in Semantic Scholar. NAACL
+https://www.semanticscholar.org/paper/09e3cf5704bcb16e6657f6ceed70e93373a54618
+
 Can be run with default arguments to download all computer science papers. For more information run the script with --help.
 
 ```sh
